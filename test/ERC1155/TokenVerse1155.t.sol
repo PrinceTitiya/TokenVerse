@@ -73,10 +73,7 @@ contract TokenVerse1155Test is Test {
     function testDismantleDragonSword() public {
         // Mint sword
         token.mint(user1, token.DRAGON_SWORD(), 1);
-        console.log(
-            "Minted sword:",
-            token.balanceOf(user1, token.DRAGON_SWORD())
-        );
+        console.log("Minted sword:", token.balanceOf(user1, token.DRAGON_SWORD()));
 
         uint256 dragon_sword = token.DRAGON_SWORD();
         uint256 dragon_glass = token.DRAGON_GLASS();
@@ -123,8 +120,7 @@ contract TokenVerse1155Test is Test {
 
     // TEST: URI template contains {id} placeholder and correct IPFS CID
     function testUriContainsIdPlaceholder() public view {
-        string
-            memory expected = "ipfs://bafybeiddzghzwimp3nbwch6mqd4h3apqfah24hb2tbwwhdepukby6io5ni/{id}.json";
+        string memory expected = "ipfs://bafybeiddzghzwimp3nbwch6mqd4h3apqfah24hb2tbwwhdepukby6io5ni/{id}.json";
 
         // uri() returns the same template for every id — {id} substitution is done client-side per ERC1155 spec
         assertEq(token.uri(token.GOLD()), expected);
