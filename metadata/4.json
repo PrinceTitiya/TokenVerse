@@ -1,0 +1,15 @@
+{
+  "name": "Event Ticket",
+  "description": "A limited-edition ticket granting access to exclusive TokenVerse events.",
+  "image": "ipfs://bafybeif3rxnzkfec5gglho3xml7dh3wjuf2xaqkkcyieccqvrj37tgozc4",
+  "attributes": [
+    {
+      "trait_type": "Category",
+      "value": "Access Pass"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    }
+  ]
+}
