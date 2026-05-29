@@ -66,6 +66,7 @@ function TokenCard({ token, supplyResult }) {
       {/* Info */}
       <div className="flex flex-1 flex-col gap-2 p-4">
         <h3 className="text-base font-bold text-white">{token.name}</h3>
+        <span className="font-mono text-xs text-gray-500">Token ID #{token.id.toString()}</span>
         <p className="text-xs leading-relaxed text-gray-400">{token.description}</p>
 
         {/* Supply row */}
@@ -130,6 +131,55 @@ export default function Home() {
               >
                 <span className="font-bold text-white">{value}</span>
                 <span className="text-gray-400">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Why ERC-1155 */}
+        <div className="mb-14 text-center">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-purple-400">
+            The Standard
+          </p>
+          <h2 className="mb-3 text-2xl font-bold text-white">Why ERC-1155?</h2>
+          <p className="mx-auto mb-8 max-w-lg text-sm text-gray-400">
+            Before ERC-1155, every token type needed its own separate contract. This standard changed that.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                icon: '⚡',
+                title: 'One Contract, All Tokens',
+                body: 'ERC-20 and ERC-721 require a fresh deployment per token type. ERC-1155 bundles unlimited token IDs into a single contract, slashing deployment cost and complexity.',
+                accent: 'border-amber-500/30 hover:border-amber-500/60',
+              },
+              {
+                icon: '🔀',
+                title: 'Fungible & Non-Fungible',
+                body: 'A single standard covers both: token ID 1 can be a currency (many copies, identical value) while token ID 3 is a unique sword — no separate ERC-721 contract needed.',
+                accent: 'border-purple-500/30 hover:border-purple-500/60',
+              },
+              {
+                icon: '📦',
+                title: 'Batch Operations',
+                body: 'Mint, transfer, or burn multiple token types in one transaction. One blockchain call instead of five cuts gas fees dramatically for games and marketplaces.',
+                accent: 'border-blue-500/30 hover:border-blue-500/60',
+              },
+              {
+                icon: '🔥',
+                title: 'On-Chain Crafting',
+                body: 'Burn inputs to mint outputs — all in one atomic call. TokenVerse uses this for dismantling: trade 1 Dragon Sword for 100 Dragon Glass shards, no middleman.',
+                accent: 'border-rose-500/30 hover:border-rose-500/60',
+              },
+            ].map(({ icon, title, body, accent }) => (
+              <div
+                key={title}
+                className={`rounded-2xl border bg-white/[0.03] p-5 text-left transition-all duration-200 ${accent}`}
+              >
+                <span className="mb-3 block text-2xl">{icon}</span>
+                <h3 className="mb-1.5 text-sm font-bold text-white">{title}</h3>
+                <p className="text-xs leading-relaxed text-gray-400">{body}</p>
               </div>
             ))}
           </div>
