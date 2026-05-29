@@ -9,9 +9,7 @@ contract MintTokenVerse1155 is Script {
         uint256 ownerPrivateKey = vm.envUint("LOCAL_PRIVATE_KEY");
         address owner = vm.addr(ownerPrivateKey);
 
-        TokenVerse1155 tokenVerse = TokenVerse1155(
-            vm.envAddress("CONTRACT_ADDRESS")
-        );
+        TokenVerse1155 tokenVerse = TokenVerse1155(vm.envAddress("CONTRACT_ADDRESS"));
 
         uint256[] memory ids = new uint256[](2);
         ids[0] = tokenVerse.GOLD();
