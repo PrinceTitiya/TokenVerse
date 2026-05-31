@@ -2,8 +2,10 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { NavLink } from 'react-router-dom';
 
 const NAV_LINKS = [
-  { to: '/', label: 'Home', end: true },
+  { to: '/', label: 'ERC-1155', end: true },
+  { to: '/mint-lab', label: 'Mint Lab' },
   { to: '/inventory', label: 'Inventory' },
+  { to: '/erc20', label: 'ERC-20' },
 ];
 
 function WalletButton() {
