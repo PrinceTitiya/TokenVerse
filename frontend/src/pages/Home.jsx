@@ -1,5 +1,5 @@
 import { useReadContracts } from 'wagmi';
-import { TOKENS, RARITY_CONFIG, TOKEN_VERSE_ADDRESS, TOKEN_VERSE_ABI } from '../constants/contracts';
+import { TOKENS, RARITY_CONFIG, TOKEN_VERSE_1155_ADDRESS, TOKEN_VERSE_ABI } from '../constants/contracts';
 
 const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
 
@@ -87,7 +87,7 @@ function TokenCard({ token, supplyResult }) {
 export default function Home() {
   const { data } = useReadContracts({
     contracts: TOKENS.map((t) => ({
-      address: TOKEN_VERSE_ADDRESS,
+      address: TOKEN_VERSE_1155_ADDRESS,
       abi: TOKEN_VERSE_ABI,
       functionName: 'totalSupply',
       args: [t.id],
