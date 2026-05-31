@@ -221,7 +221,7 @@ function FaucetSection() {
 export default function ERC20() {
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gray-950 px-6 py-16">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-7xl">
 
         {/* ── Hero ──────────────────────────────────────────────────── */}
         <div className="mb-14 text-center">
@@ -234,7 +234,7 @@ export default function ERC20() {
               Gold
             </span>
           </h1>
-          <p className="mx-auto max-w-xl text-base text-gray-400">
+          <p className="mx-auto max-w-2xl text-base text-gray-400">
             The standard behind every DeFi protocol, stablecoin, and governance token.
             Interact with a live ERC-20 — claim from the faucet, transfer, approve a spender,
             and watch how supply changes.
@@ -266,7 +266,7 @@ export default function ERC20() {
             The Standard
           </p>
           <h2 className="mb-3 text-2xl font-bold text-white">Why ERC-20?</h2>
-          <p className="mx-auto mb-8 max-w-lg text-sm text-gray-400">
+          <p className="mx-auto mb-8 max-w-xl text-sm text-gray-400">
             ERC-20 is the most deployed token standard in existence. Understanding it is
             understanding how value moves on Ethereum.
           </p>
@@ -478,7 +478,7 @@ export default function ERC20() {
             Real World
           </p>
           <h2 className="mb-3 text-2xl font-bold text-white">Where ERC-20 Lives</h2>
-          <p className="mx-auto mb-8 max-w-lg text-sm text-gray-400">
+          <p className="mx-auto mb-8 max-w-xl text-sm text-gray-400">
             Every token below runs the same four-function interface you just learned.
           </p>
 
