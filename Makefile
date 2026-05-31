@@ -1,9 +1,11 @@
 -include .env
 
-.PHONY: build test fmt snapshot anvil deploy-local deploy-sepolia \
+.PHONY: build test fmt snapshot anvil frontend frontend-install \
         simulate-deploy-local simulate-deploy-sepolia \
-        mint-local simulate-mint-local \
-        frontend frontend-install
+        deploy-local deploy-sepolia \
+        simulate-deploy-erc20-local simulate-deploy-erc20-sepolia \
+        deploy-erc20-local deploy-erc20-sepolia \
+        mint-local simulate-mint-local
 
 # ── Build & test ──────────────────────────────────────────────────────────────
 build:
@@ -34,26 +36,26 @@ anvil:
 
 # ── Simulate-Deploy ────────────────────────────────────────────────────────────────────
 
-simulate-deploy-local:
+simulate-deploy-1155-local:
 	forge script script/DeployTokenVerse1155.s.sol \
 		--rpc-url http://localhost:8545 \
 		--private-key $(LOCAL_PRIVATE_KEY) \
 		 -vvv
 		
-simulate-deploy-sepolia:
+simulate-deploy-1155-sepolia:
 	forge script script/DeployTokenVerse1155.s.sol \
 		--rpc-url $(SEPOLIA_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		-vvv
 
 # ── Mint ─────────────────────────────────────────────────────────────────────
-simulate-mint-local:
+simulate-mint-1155-local:
 	forge script script/MintTokenVerse1155.s.sol \
 		--rpc-url http://localhost:8545 \
 		--private-key $(LOCAL_PRIVATE_KEY) \
 		-vvv
 
-mint-local:
+mint-1155-local:
 	forge script script/MintTokenVerse1155.s.sol \
 		--rpc-url http://localhost:8545 \
 		--private-key $(LOCAL_PRIVATE_KEY) \
@@ -61,7 +63,7 @@ mint-local:
 		-vvv
 
 # ── Deploy ────────────────────────────────────────────────────────────────────
-deploy-local:
+deploy-1155-local:
 	forge script script/DeployTokenVerse1155.s.sol \
 		--rpc-url http://localhost:8545 \
 		--private-key $(LOCAL_PRIVATE_KEY) \
@@ -70,6 +72,35 @@ deploy-local:
 		
 deploy-sepolia:
 	forge script script/DeployTokenVerse1155.s.sol \
+		--rpc-url $(SEPOLIA_RPC_URL) \
+		--private-key $(PRIVATE_KEY) \
+		--broadcast \
+		--verify \
+		--etherscan-api-key $(ETHERSCAN_API_KEY) \
+		-vvv
+
+# ── ERC20: TokenVerseGold ─────────────────────────────────────────────────────
+simulate-deploy-erc20-local:
+	forge script script/DeployTokenVerseGold.s.sol \
+		--rpc-url http://localhost:8545 \
+		--private-key $(LOCAL_PRIVATE_KEY) \
+		-vvv
+
+simulate-deploy-erc20-sepolia:
+	forge script script/DeployTokenVerseGold.s.sol \
+		--rpc-url $(SEPOLIA_RPC_URL) \
+		--private-key $(PRIVATE_KEY) \
+		-vvv
+
+deploy-erc20-local:
+	forge script script/DeployTokenVerseGold.s.sol \
+		--rpc-url http://localhost:8545 \
+		--private-key $(LOCAL_PRIVATE_KEY) \
+		--broadcast \
+		-vvv
+
+deploy-erc20-sepolia:
+	forge script script/DeployTokenVerseGold.s.sol \
 		--rpc-url $(SEPOLIA_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		--broadcast \
