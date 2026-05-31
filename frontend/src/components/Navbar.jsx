@@ -1,11 +1,14 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { NavLink } from 'react-router-dom';
 
-const NAV_LINKS = [
-  { to: '/', label: 'ERC-1155', end: true },
-  { to: '/mint-lab', label: 'Mint Lab' },
+const STANDARD_LINKS = [
+  { to: '/erc20',  label: 'ERC-20' },
+  { to: '/',       label: 'ERC-1155', end: true },
+];
+
+const APP_LINKS = [
+  { to: '/mint-lab',  label: 'Mint Lab' },
   { to: '/inventory', label: 'Inventory' },
-  { to: '/erc20', label: 'ERC-20' },
 ];
 
 function WalletButton() {
@@ -85,7 +88,7 @@ export default function Navbar() {
 
       <div className="flex h-20 w-full items-center justify-between px-10">
 
-        {/* Left — logo + nav links */}
+        {/* Left — logo + token standard links */}
         <div className="flex items-center gap-10">
           <NavLink to="/" className="flex select-none items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-purple-500 shadow-lg shadow-amber-500/20">
@@ -97,7 +100,7 @@ export default function Navbar() {
           </NavLink>
 
           <div className="flex items-center gap-8">
-            {NAV_LINKS.map(({ to, label, end }) => (
+            {STANDARD_LINKS.map(({ to, label, end }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -116,8 +119,28 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Right — wallet */}
-        <WalletButton />
+        {/* Right — app links + wallet */}
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-8">
+            {APP_LINKS.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `relative text-lg font-medium tracking-wide transition-colors duration-200 ${
+                    isActive
+                      ? 'text-white after:absolute after:-bottom-1.5 after:left-0 after:h-px after:w-full after:bg-gradient-to-r after:from-amber-400 after:to-purple-400'
+                      : 'text-gray-400 hover:text-white'
+                  }`
+                }
+              >
+                {label}
+              </NavLink>
+            ))}
+          </div>
+          <WalletButton />
+        </div>
+
       </div>
     </nav>
   );
