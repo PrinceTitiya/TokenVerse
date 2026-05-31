@@ -84,6 +84,21 @@ function SectionHeader({ eyebrow, title, accent = 'text-amber-400' }) {
   );
 }
 
+/* ─── toast notification ───────────────────────────────────── */
+function ToastNotification({ message }) {
+  if (!message) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-white/10 bg-gray-900 px-5 py-4 shadow-2xl shadow-black/50">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/20">
+        <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6l3 3 5-5" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <p className="text-sm font-semibold text-white">{message}</p>
+    </div>
+  );
+}
+
 /* ─── ERC-20 holding card ──────────────────────────────────── */
 function ERC20SkeletonCard() {
   return (
@@ -188,7 +203,7 @@ function ERC20HoldingCard({ balance, hasClaimed, isLoading }) {
 }
 
 /* ─── TVG transfer panel ───────────────────────────────────── */
-function TransferPanel({ balance, onSuccess }) {
+function TransferPanel({ balance, onSuccess, onNotify }) {
   const [isOpen, setIsOpen]         = useState(false);
   const [recipient, setRecipient]   = useState('');
   const [amount, setAmount]         = useState('');
@@ -200,6 +215,7 @@ function TransferPanel({ balance, onSuccess }) {
   useEffect(() => {
     if (isConfirmed) {
       onSuccess?.();
+      onNotify?.('Transfer confirmed!');
       const timer = setTimeout(() => {
         reset();
         setRecipient('');
@@ -207,7 +223,7 @@ function TransferPanel({ balance, onSuccess }) {
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [isConfirmed, onSuccess, reset]);
+  }, [isConfirmed, onSuccess, onNotify, reset]);
 
   function setMax() {
     if (balance) setAmount(formatUnits(balance, 18));
@@ -354,7 +370,7 @@ function TransferPanel({ balance, onSuccess }) {
 }
 
 /* ─── TVG allowance panel (approve + transferFrom) ─────────── */
-function ApprovePanel({ ownerAddress, balance, onSuccess }) {
+function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
   const [isOpen, setIsOpen]     = useState(false);
 
   // ── Step 1: approve ───────────────────────────────────────
@@ -379,10 +395,11 @@ function ApprovePanel({ ownerAddress, balance, onSuccess }) {
     if (s1Confirmed) {
       onSuccess?.();
       refetchS1();
+      onNotify?.('Allowance updated!');
       const t = setTimeout(() => { s1Reset(); setS1Amount(''); }, 3000);
       return () => clearTimeout(t);
     }
-  }, [s1Confirmed, onSuccess, refetchS1, s1Reset]);
+  }, [s1Confirmed, onSuccess, onNotify, refetchS1, s1Reset]);
 
   function handleApprove() {
     setS1Error('');
@@ -425,10 +442,11 @@ function ApprovePanel({ ownerAddress, balance, onSuccess }) {
     if (s2Confirmed) {
       onSuccess?.();
       refetchS2();
+      onNotify?.('Tokens pulled!');
       const t = setTimeout(() => { s2Reset(); setS2Amount(''); }, 3000);
       return () => clearTimeout(t);
     }
-  }, [s2Confirmed, onSuccess, refetchS2, s2Reset]);
+  }, [s2Confirmed, onSuccess, onNotify, refetchS2, s2Reset]);
 
   function handleTransferFrom() {
     setS2Error('');
@@ -772,6 +790,12 @@ function HoldingCard({ token, balance, dismantleState, onDismantle }) {
 /* ─── page ─────────────────────────────────────────────────── */
 export default function Inventory() {
   const { address, isConnected } = useAccount();
+  const [toastMsg, setToastMsg] = useState(null);
+
+  function notify(message) {
+    setToastMsg(message);
+    setTimeout(() => setToastMsg(null), 3500);
+  }
 
   // ERC-20 reads
   const { data: erc20Data, isLoading: erc20Loading, refetch: refetchErc20 } = useReadContracts({
@@ -828,6 +852,7 @@ export default function Inventory() {
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-gray-950 px-6 py-16">
+      <ToastNotification message={toastMsg} />
       <div className="mx-auto max-w-7xl">
 
         {/* ── Page header ─────────────────────────────────────────── */}
@@ -855,8 +880,8 @@ export default function Inventory() {
             isLoading={erc20Loading}
           />
           <div className="mt-3 flex flex-col gap-3">
-            <TransferPanel balance={tvgBalance} onSuccess={refetchErc20} />
-            <ApprovePanel ownerAddress={address} balance={tvgBalance} onSuccess={refetchErc20} />
+            <TransferPanel balance={tvgBalance} onSuccess={refetchErc20} onNotify={notify} />
+            <ApprovePanel ownerAddress={address} balance={tvgBalance} onSuccess={refetchErc20} onNotify={notify} />
           </div>
         </div>
 
