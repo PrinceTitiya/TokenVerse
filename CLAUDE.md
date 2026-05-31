@@ -4,72 +4,91 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+The `Makefile` wraps the most common tasks. Prefer `make` over raw `forge` commands.
+
 ```shell
-# Build
-forge build
+# Build & test
+make build
+make test
+make test-match T=testMintGold     # run a single test by name
 
-# Run all tests
-forge test
-
-# Run tests with verbose output (recommended during development)
-forge test -vvv
-
-# Run a single test by name
-forge test --match-test testMintGold -vvv
-
-# Run all tests in a specific file
-forge test --match-path test/ERC1155/TokenVerse1155.t.sol -vvv
-
-# Format code (required by CI)
-forge fmt
-
-# Check formatting without writing (CI uses this)
-forge fmt --check
+# Formatting (required by CI)
+make fmt                           # write in place (forge fmt)
+forge fmt --check                  # CI check only
 
 # Gas snapshot
-forge snapshot
-
-# Deploy to a local anvil node
-forge script script/DeployTokenVerse1155.s.sol --rpc-url http://localhost:8545 --broadcast
-
-# Deploy to a live network (e.g. Sepolia) — requires PRIVATE_KEY env var
-forge script script/DeployTokenVerse1155.s.sol --rpc-url $SEPOLIA_RPC_URL --broadcast --verify
+make snapshot
 
 # Local Ethereum node
-anvil
+make anvil
+
+# Frontend
+make frontend-install              # npm install inside frontend/
+make frontend                      # starts Vite dev server (localhost:5173)
+
+# Deploy (simulate = no --broadcast)
+make simulate-deploy-local         # dry-run against Anvil, reads LOCAL_PRIVATE_KEY from .env
+make deploy-local                  # NOTE: currently missing --broadcast in Makefile — behaves as dry-run
+make simulate-deploy-sepolia       # dry-run against Sepolia
+make deploy-sepolia                # broadcast + verify on Sepolia (needs ETHERSCAN_API_KEY)
 ```
+
+Raw forge equivalents when you need extra flags:
+
+```shell
+forge test --match-path test/ERC1155/TokenVerse1155.t.sol -vvv
+forge script script/DeployTokenVerse1155.s.sol --rpc-url http://localhost:8545 --broadcast
+```
+
+### Environment variables
+
+`.env` is loaded automatically by `make` via `-include .env`. Required vars:
+
+| Variable | Used by |
+|---|---|
+| `LOCAL_PRIVATE_KEY` | Makefile `deploy-local` / `simulate-deploy-local` |
+| `PRIVATE_KEY` | Makefile `deploy-sepolia` / `simulate-deploy-sepolia` |
+| `SEPOLIA_RPC_URL` | Sepolia deploy targets |
+| `ETHERSCAN_API_KEY` | Contract verification on Sepolia |
+| `VITE_CONTRACT_ADDRESS` | Frontend — address of the deployed `TokenVerse1155` |
+| `VITE_WALLETCONNECT_PROJECT_ID` | Frontend — RainbowKit wallet connect modal |
+| `VITE_SEPOLIA_RPC_URL` | Frontend — transport for Sepolia in wagmi config |
+
+After every fresh `make deploy-local`, the contract address changes — update `VITE_CONTRACT_ADDRESS` in `.env` before using the frontend.
 
 ## Architecture
 
-This is a Foundry project using Solidity `^0.8.26` and OpenZeppelin contracts as a git submodule.
+### Project roadmap
 
-**Remapping:** `@openzeppelin/contracts/` maps to `lib/openzeppelin-contracts/contracts/` — use this import path in all contracts.
+TokenVerse is planned to demonstrate ERC20, ERC721, and ERC1155 standards side-by-side. Currently only ERC1155 is implemented. New contracts go under `src/ERC20/`, `src/ERC721/`, etc. Tests and deploy scripts mirror that layout under `test/` and `script/`.
 
-### Contract structure
+### Solidity (Foundry)
 
-`TokenVerse1155` (`src/ERC1155/TokenVerse1155.sol`) is the only deployed contract so far. It inherits from three OZ contracts: `ERC1155`, `ERC1155Supply`, and `Ownable`. The `_update` override is required to resolve the diamond-inheritance conflict between `ERC1155` and `ERC1155Supply`.
+Solidity `^0.8.26`, OpenZeppelin as a git submodule. Remapping: `@openzeppelin/contracts/` → `lib/openzeppelin-contracts/contracts/`.
 
-Token IDs are declared as `uint256` constants (GOLD=1, GEMS=2, DRAGON_SWORD=3, EVENT_TICKET=4, DRAGON_GLASS=5). The key custom mechanic is `dismantleDragonSword()`: burns 1 DRAGON_SWORD from `msg.sender` and mints 100 DRAGON_GLASS in return — a crafting pattern to replicate for future mechanics.
+`TokenVerse1155` (`src/ERC1155/TokenVerse1155.sol`) is the only deployed contract. It inherits `ERC1155`, `ERC1155Supply`, and `Ownable`. The `_update` override is required to resolve the diamond-inheritance conflict between `ERC1155` and `ERC1155Supply`.
 
-`mint` and `mintBatch` are `onlyOwner`. `burn` and `burnBatch` are callable by the token holder or an approved operator, enforced via the custom `NotApproved` error — OZ ERC1155 does not enforce this on `_burn` internally.
+Token IDs are `uint256` constants: GOLD=1, GEMS=2, DRAGON_SWORD=3, EVENT_TICKET=4, DRAGON_GLASS=5.
 
-### Metadata
+Key design decisions:
+- `mint` / `mintBatch` are `onlyOwner`. `burn` / `burnBatch` are callable by the holder or an approved operator — enforced via the custom `NotApproved` error because OZ's `_burn` does not enforce this internally.
+- `dismantleDragonSword()` is the crafting mechanic: burns 1 DRAGON_SWORD → mints 100 DRAGON_GLASS. This is the pattern to replicate for future crafting recipes.
 
-Token metadata lives in `metadata/` as `1.json`–`5.json`. The base URI in the constructor uses the ERC1155 `{id}` template:
+Token metadata lives in `metadata/1.json`–`5.json`. The base URI uses the ERC1155 `{id}` template (`ipfs://.../{id}.json`); `uri()` returns the template unchanged for every token ID — substitution is done client-side per the spec.
 
-```
-ipfs://bafybeiddzghzwimp3nbwch6mqd4h3apqfah24hb2tbwwhdepukby6io5ni/{id}.json
-```
+### Tests
 
-`uri()` returns this template unchanged for every token ID — `{id}` substitution is done client-side per the ERC1155 spec. Raw IPFS gateway URLs for each token image are in `CID.txt`.
+Tests live in `test/ERC1155/TokenVerse1155.t.sol`. The contract deploys `TokenVerse1155` in `setUp()` with `address(this)` as owner. Use `vm.prank(user)` for non-owner calls; `makeAddr("user1")` / `makeAddr("user2")` for named addresses.
 
-### Test structure
+### Frontend
 
-Tests live in `test/ERC1155/TokenVerse1155.t.sol`. The test contract deploys `TokenVerse1155` in `setUp()` and sets itself as owner (`address(this)`). Named test addresses are created with `makeAddr("user1")` / `makeAddr("user2")`. Use `vm.prank(user)` to simulate calls from non-owner addresses.
+React + Vite app in `frontend/`. Stack: Wagmi v2, RainbowKit v2, viem, TanStack Query, Tailwind CSS v3.
 
-### Roadmap context
+Provider order in `main.jsx`: `WagmiProvider` → `QueryClientProvider` → `RainbowKitProvider` → `BrowserRouter`.
 
-The project is planned to expand with ERC20, ERC721, gas comparison tooling, and a React frontend (Wagmi + RainbowKit). New contracts should go under `src/ERC20/`, `src/ERC721/`, etc., following the same directory convention. Tests and deploy scripts should mirror that layout under `test/` and `script/`.
+**`frontend/src/constants/contracts.js`** — single source of truth for the frontend. Exports `TOKEN_VERSE_ADDRESS`, `TOKEN_VERSE_ABI` (hand-maintained fragment — must be updated manually if the contract interface changes), `TOKENS` (metadata array for all 5 tokens), and `RARITY_CONFIG` (Tailwind class maps keyed by rarity string).
+
+**`frontend/src/wagmi.config.js`** — explicit `transports` are required for both Sepolia and the local Anvil chain (id 31337). Without them, wagmi's `getDefaultConfig` may silently omit the transport, causing `to: None` errors on Anvil `eth_call` requests.
 
 ### CI
 
