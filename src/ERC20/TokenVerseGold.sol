@@ -38,8 +38,9 @@ contract TokenVerseGold is ERC20, ERC20Burnable, Ownable {
 
     function faucet() external {
         if (hasClaimed[msg.sender]) revert TokenVerseGold__AlreadyClaimed();
-        if (totalFaucetClaims >= MAX_FAUCET_CLAIMS)
+        if (totalFaucetClaims >= MAX_FAUCET_CLAIMS) {
             revert TokenVerseGold__FaucetDepleted();
+        }
 
         hasClaimed[msg.sender] = true;
         totalFaucetClaims += 1;
