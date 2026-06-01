@@ -111,10 +111,7 @@ contract TokenVerseNFTTest is Test {
         nft.mint(DRAGON_KNIGHT);
 
         string memory uri = nft.tokenURI(0);
-        assertEq(
-            uri,
-            "ipfs://bafybeihrz5ifacb77eu7dvhesuhdougxkecasoijmvk3vw7gm425vd4kve/0.json"
-        );
+        assertEq(uri, "ipfs://bafybeihrz5ifacb77eu7dvhesuhdougxkecasoijmvk3vw7gm425vd4kve/0.json");
     }
 
     function testTokenURIEmberWitch() public {
@@ -122,10 +119,7 @@ contract TokenVerseNFTTest is Test {
         nft.mint(EMBER_WITCH);
 
         string memory uri = nft.tokenURI(0);
-        assertEq(
-            uri,
-            "ipfs://bafybeihrz5ifacb77eu7dvhesuhdougxkecasoijmvk3vw7gm425vd4kve/1.json"
-        );
+        assertEq(uri, "ipfs://bafybeihrz5ifacb77eu7dvhesuhdougxkecasoijmvk3vw7gm425vd4kve/1.json");
     }
 
     function testTokenURIVoidStalker() public {
@@ -133,10 +127,7 @@ contract TokenVerseNFTTest is Test {
         nft.mint(VOID_STALKER);
 
         string memory uri = nft.tokenURI(0);
-        assertEq(
-            uri,
-            "ipfs://bafybeihrz5ifacb77eu7dvhesuhdougxkecasoijmvk3vw7gm425vd4kve/2.json"
-        );
+        assertEq(uri, "ipfs://bafybeihrz5ifacb77eu7dvhesuhdougxkecasoijmvk3vw7gm425vd4kve/2.json");
     }
 
     // ========================================
@@ -237,7 +228,7 @@ contract TokenVerseNFTTest is Test {
     function testTokenOfOwnerByIndex() public {
         vm.startPrank(user1);
         nft.mint(DRAGON_KNIGHT); // tokenId 0
-        nft.mint(EMBER_WITCH);   // tokenId 1
+        nft.mint(EMBER_WITCH); // tokenId 1
         vm.stopPrank();
 
         assertEq(nft.tokenOfOwnerByIndex(user1, 0), 0);

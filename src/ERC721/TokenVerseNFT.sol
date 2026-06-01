@@ -36,10 +36,7 @@ contract TokenVerseNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
 
     // CONSTRUCTOR
 
-    constructor()
-        ERC721("TokenVerse NFT", "TVNFT")
-        Ownable(msg.sender)
-    {
+    constructor() ERC721("TokenVerse NFT", "TVNFT") Ownable(msg.sender) {
         _baseTokenUri = "ipfs://bafybeihrz5ifacb77eu7dvhesuhdougxkecasoijmvk3vw7gm425vd4kve/";
     }
 
@@ -67,12 +64,7 @@ contract TokenVerseNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
 
     // REQUIRED OVERRIDES — resolve diamond inheritance between ERC721, ERC721URIStorage, ERC721Enumerable
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
@@ -93,10 +85,7 @@ contract TokenVerseNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
         return super._update(to, tokenId, auth);
     }
 
-    function _increaseBalance(address account, uint128 value)
-        internal
-        override(ERC721, ERC721Enumerable)
-    {
+    function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Enumerable) {
         super._increaseBalance(account, value);
     }
 }
