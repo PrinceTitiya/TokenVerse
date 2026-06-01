@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { TOKEN_VERSE_ERC20_ADDRESS, TOKEN_VERSE_GOLD_ABI } from '../constants/contracts';
+import { TOKEN_VERSE_ERC20_ADDRESS, TOKEN_VERSE_ERC20_ABI } from '../constants/contracts';
 import { formatUnits } from 'viem';
 
 /* ─── format TVG balance ───────────────────────────────────── */
@@ -18,9 +18,9 @@ function FaucetSection() {
 
   const { data, isLoading, refetch } = useReadContracts({
     contracts: [
-      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_GOLD_ABI, functionName: 'balanceOf', args: [address ?? '0x0000000000000000000000000000000000000000'] },
-      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_GOLD_ABI, functionName: 'hasClaimed', args: [address ?? '0x0000000000000000000000000000000000000000'] },
-      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_GOLD_ABI, functionName: 'totalFaucetClaims' },
+      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'balanceOf', args: [address ?? '0x0000000000000000000000000000000000000000'] },
+      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'hasClaimed', args: [address ?? '0x0000000000000000000000000000000000000000'] },
+      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'totalFaucetClaims' },
     ],
     query: { enabled: !!TOKEN_VERSE_ERC20_ADDRESS },
   });
@@ -42,7 +42,7 @@ function FaucetSection() {
   }, [isConfirmed, refetch, reset]);
 
   function handleClaim() {
-    writeContract({ address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_GOLD_ABI, functionName: 'faucet' });
+    writeContract({ address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'faucet' });
   }
 
   /* ── button state ── */
