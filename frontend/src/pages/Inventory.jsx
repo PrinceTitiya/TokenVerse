@@ -5,8 +5,48 @@ import { formatUnits, parseUnits } from 'viem';
 import {
   TOKENS, RARITY_CONFIG,
   TOKEN_VERSE_1155_ADDRESS, TOKEN_VERSE_ABI,
-  TOKEN_VERSE_ERC20_ADDRESS, TOKEN_VERSE_GOLD_ABI,
+  TOKEN_VERSE_ERC20_ADDRESS, TOKEN_VERSE_ERC20_ABI,
+  TOKEN_VERSE_ERC721_ADDRESS, TOKEN_VERSE_ERC721_ABI,
 } from '../constants/contracts';
+
+const ERC721_TYPES = [
+  {
+    id: 0,
+    name: 'Dragon Knight',
+    class: 'Warrior',
+    element: 'Steel',
+    weapon: 'Dragon Sword',
+    imageCid: 'bafybeif3awzqpskc3dtsd7k562nw4ctnhubtisav7nczbmy7uzgbm4joqi',
+    ownedBorder: 'border-amber-500/30 hover:border-amber-500/60',
+    ownedGlow: 'hover:shadow-amber-500/20',
+    badgeClass: 'bg-amber-500/10 text-amber-400',
+    imageBg: 'from-amber-950/60 to-gray-900',
+  },
+  {
+    id: 1,
+    name: 'Ember Witch',
+    class: 'Mage',
+    element: 'Fire',
+    weapon: 'Ember Staff',
+    imageCid: 'bafybeieefdnvurup7fvj5d26q2o7nhmaxmw332l56qyzqityrhaarcgiza',
+    ownedBorder: 'border-rose-500/30 hover:border-rose-500/60',
+    ownedGlow: 'hover:shadow-rose-500/20',
+    badgeClass: 'bg-rose-500/10 text-rose-400',
+    imageBg: 'from-rose-950/60 to-gray-900',
+  },
+  {
+    id: 2,
+    name: 'Void Stalker',
+    class: 'Rogue',
+    element: 'Shadow',
+    weapon: 'Void Daggers',
+    imageCid: 'bafybeibsfifb7z5degyt7h7vwkdnzqfnx7zdy7vudmeyn7z2hqdozfefte',
+    ownedBorder: 'border-purple-500/30 hover:border-purple-500/60',
+    ownedGlow: 'hover:shadow-purple-500/20',
+    badgeClass: 'bg-purple-500/10 text-purple-400',
+    imageBg: 'from-purple-950/60 to-gray-900',
+  },
+];
 
 const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
 
@@ -244,7 +284,7 @@ function TransferPanel({ balance, onSuccess, onNotify }) {
     if (parsed > balance) { setInputError('Amount exceeds your balance'); return; }
     writeContract({
       address: TOKEN_VERSE_ERC20_ADDRESS,
-      abi: TOKEN_VERSE_GOLD_ABI,
+      abi: TOKEN_VERSE_ERC20_ABI,
       functionName: 'transfer',
       args: [recipient, parsed],
     });
@@ -382,7 +422,7 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
 
   const { data: s1Allowance, refetch: refetchS1 } = useReadContract({
     address: TOKEN_VERSE_ERC20_ADDRESS,
-    abi: TOKEN_VERSE_GOLD_ABI,
+    abi: TOKEN_VERSE_ERC20_ABI,
     functionName: 'allowance',
     args: [ownerAddress ?? '0x0000000000000000000000000000000000000000', spender],
     query: { enabled: isValidSpender && !!ownerAddress && !!TOKEN_VERSE_ERC20_ADDRESS },
@@ -412,7 +452,7 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
     try { parsed = parseUnits(s1Amount, 18); } catch { setS1Error('Invalid amount'); return; }
     writeApprove({
       address: TOKEN_VERSE_ERC20_ADDRESS,
-      abi: TOKEN_VERSE_GOLD_ABI,
+      abi: TOKEN_VERSE_ERC20_ABI,
       functionName: 'approve',
       args: [spender, parsed],
     });
@@ -429,7 +469,7 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
 
   const { data: s2Allowance, refetch: refetchS2 } = useReadContract({
     address: TOKEN_VERSE_ERC20_ADDRESS,
-    abi: TOKEN_VERSE_GOLD_ABI,
+    abi: TOKEN_VERSE_ERC20_ABI,
     functionName: 'allowance',
     args: [fromAddr, ownerAddress ?? '0x0000000000000000000000000000000000000000'],
     query: { enabled: isValidFrom && !!ownerAddress && !!TOKEN_VERSE_ERC20_ADDRESS },
@@ -461,7 +501,7 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
     if (s2Allowance != null && parsed > s2Allowance) { setS2Error('Amount exceeds your allowance'); return; }
     writeTF({
       address: TOKEN_VERSE_ERC20_ADDRESS,
-      abi: TOKEN_VERSE_GOLD_ABI,
+      abi: TOKEN_VERSE_ERC20_ABI,
       functionName: 'transferFrom',
       args: [fromAddr, toAddr, parsed],
     });
@@ -677,6 +717,310 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
   );
 }
 
+/* ─── ERC-721 holding card ─────────────────────────────────── */
+function ERC721HoldingCard({ nftType, hasMinted }) {
+  const owned = hasMinted === true;
+
+  return (
+    <div className={`
+      group relative flex flex-col overflow-hidden rounded-2xl border bg-gray-900
+      transition-all duration-300
+      ${owned
+        ? `${nftType.ownedBorder} ${nftType.ownedGlow} hover:-translate-y-1 hover:shadow-xl`
+        : 'border-white/5 opacity-50'}
+    `}>
+      {/* image */}
+      <div className={`relative aspect-square overflow-hidden bg-gradient-to-b ${owned ? nftType.imageBg : 'from-gray-800 to-gray-900'} p-5`}>
+        <img
+          src={`${IPFS_GATEWAY}${nftType.imageCid}`}
+          alt={nftType.name}
+          className={`h-full w-full object-contain drop-shadow-lg transition-transform duration-300 ${owned ? 'group-hover:scale-105' : 'grayscale'}`}
+          loading="lazy"
+        />
+        <span className={`absolute right-3 top-3 rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide ${owned ? nftType.badgeClass : 'bg-white/5 text-gray-500'}`}>
+          Legendary
+        </span>
+        <span className="absolute left-3 top-3 rounded-full bg-black/40 px-2 py-0.5 font-mono text-xs text-gray-400 backdrop-blur-sm">
+          Type #{nftType.id}
+        </span>
+      </div>
+
+      {/* info */}
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-bold text-white">{nftType.name}</h3>
+          <span className={`rounded-full px-2 py-0.5 font-mono text-xs font-semibold ${owned ? nftType.badgeClass : 'bg-white/5 text-gray-600'}`}>
+            #{nftType.id}
+          </span>
+        </div>
+
+        {/* trait chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {[nftType.class, nftType.element, nftType.weapon].map((attr) => (
+            <span
+              key={attr}
+              className={`rounded-full border px-2 py-0.5 text-xs ${owned ? 'border-white/10 bg-white/5 text-gray-400' : 'border-white/5 bg-transparent text-gray-600'}`}
+            >
+              {attr}
+            </span>
+          ))}
+        </div>
+
+        {/* ownership row */}
+        <div className="mt-auto border-t border-white/5 pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">ERC-721</span>
+            {owned ? (
+              <span className={`flex items-center gap-1.5 rounded-full border border-current/20 px-2.5 py-1 text-xs font-semibold ${nftType.badgeClass}`}>
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                Minted
+              </span>
+            ) : (
+              <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                Not Minted
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── ERC-721 transfer panel ───────────────────────────────── */
+function ERC721TransferPanel({ address, nftMinted, nftBalance, onSuccess, onNotify }) {
+  const [isOpen, setIsOpen]           = useState(false);
+  const [recipient, setRecipient]     = useState('');
+  const [selectedTypeId, setSelectedTypeId] = useState('');
+  const [inputError, setInputError]   = useState('');
+
+  const ownedTypes = ERC721_TYPES.filter((t) => nftMinted[t.id]);
+  const hasAnyOwned = nftBalance != null && nftBalance > 0n;
+
+  // Step 1: enumerate all tokenIds the address currently holds (max 3)
+  const { data: tokenIndexData } = useReadContracts({
+    contracts: [0n, 1n, 2n].map((i) => ({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'tokenOfOwnerByIndex',
+      args: [address ?? '0x0000000000000000000000000000000000000000', i],
+    })),
+    query: { enabled: !!address && !!TOKEN_VERSE_ERC721_ADDRESS && isOpen && hasAnyOwned },
+  });
+
+  const ownedTokenIds = [0, 1, 2]
+    .map((i) => tokenIndexData?.[i]?.status === 'success' ? tokenIndexData[i].result : null)
+    .filter((id) => id != null);
+
+  // Step 2: fetch tokenURI for each owned tokenId to resolve typeId
+  const { data: uriData } = useReadContracts({
+    contracts: ownedTokenIds.map((tokenId) => ({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'tokenURI',
+      args: [tokenId],
+    })),
+    query: { enabled: ownedTokenIds.length > 0 && isOpen },
+  });
+
+  // Build typeId → tokenId map by parsing "ipfs://…/0.json" → 0
+  const typeToTokenId = {};
+  ownedTokenIds.forEach((tokenId, i) => {
+    const uri = uriData?.[i]?.status === 'success' ? uriData[i].result : null;
+    if (uri) {
+      const typeId = parseInt(uri.split('/').pop());
+      if (!isNaN(typeId)) typeToTokenId[typeId] = tokenId;
+    }
+  });
+
+  const isValidRecipient = /^0x[0-9a-fA-F]{40}$/.test(recipient);
+  const selectedTypeIdNum = selectedTypeId !== '' ? parseInt(selectedTypeId) : null;
+
+  // Live check: does recipient already own the selected character type?
+  const { data: recipientHasMinted } = useReadContract({
+    address: TOKEN_VERSE_ERC721_ADDRESS,
+    abi: TOKEN_VERSE_ERC721_ABI,
+    functionName: 'hasMintedType',
+    args: [
+      isValidRecipient ? recipient : '0x0000000000000000000000000000000000000000',
+      BigInt(selectedTypeIdNum ?? 0),
+    ],
+    query: { enabled: isValidRecipient && selectedTypeIdNum !== null && !!TOKEN_VERSE_ERC721_ADDRESS },
+  });
+
+  const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      onSuccess?.();
+      onNotify?.('NFT transferred!');
+      const t = setTimeout(() => {
+        reset();
+        setRecipient('');
+        setSelectedTypeId('');
+        setInputError('');
+      }, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, onSuccess, onNotify, reset]);
+
+  function handleTransfer() {
+    setInputError('');
+    if (!isValidRecipient) { setInputError('Enter a valid 0x address'); return; }
+    if (selectedTypeIdNum === null) { setInputError('Select a character to transfer'); return; }
+    if (recipientHasMinted) { setInputError('Recipient already owns this character type'); return; }
+    const tokenId = typeToTokenId[selectedTypeIdNum];
+    if (tokenId == null) { setInputError('Token not found — you may have already transferred it'); return; }
+    writeContract({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'safeTransferFrom',
+      args: [address, recipient, tokenId],
+    });
+  }
+
+  const selectedType = ERC721_TYPES.find((t) => t.id === selectedTypeIdNum);
+  const resolvedTokenId = selectedTypeIdNum !== null ? typeToTokenId[selectedTypeIdNum] : null;
+  const isBusy = isPending || isConfirming;
+
+  if (!hasAnyOwned) return null;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-white/5 bg-gray-900">
+      {/* header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-white/[0.02]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10">
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6h8M7 3l3 3-3 3" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Transfer NFT</p>
+            <p className="text-xs text-gray-500">Send a character to another wallet</p>
+          </div>
+        </div>
+        <svg
+          width="16" height="16" viewBox="0 0 12 12" fill="none"
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="space-y-4 border-t border-white/5 px-6 pb-6 pt-5">
+          {/* callout */}
+          <div className="rounded-xl border border-blue-500/10 bg-blue-500/[0.05] px-4 py-3">
+            <p className="text-xs leading-relaxed text-gray-400">
+              <span className="font-semibold text-blue-300">safeTransferFrom(from, to, tokenId)</span>{' '}
+              moves full ownership to a new wallet. The recipient must not already hold that character type.
+            </p>
+          </div>
+
+          {/* character selector */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Character to Transfer
+            </label>
+            <select
+              value={selectedTypeId}
+              onChange={(e) => { setSelectedTypeId(e.target.value); setInputError(''); }}
+              disabled={isBusy}
+              className="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-500/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <option value="">Select a character…</option>
+              {ownedTypes.map((t) => (
+                <option key={t.id} value={t.id.toString()}>
+                  {t.name} — Type #{t.id} ({t.class} · {t.element})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* recipient */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Recipient Address
+            </label>
+            <input
+              type="text"
+              placeholder="0x..."
+              value={recipient}
+              onChange={(e) => { setRecipient(e.target.value); setInputError(''); }}
+              disabled={isBusy}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50"
+            />
+          </div>
+
+          {/* live recipient status */}
+          {isValidRecipient && selectedTypeIdNum !== null && (
+            <div className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
+              recipientHasMinted
+                ? 'border-rose-500/20 bg-rose-500/5'
+                : 'border-white/5 bg-white/[0.02]'
+            }`}>
+              <span className="text-xs text-gray-500">Recipient status</span>
+              <span className={`text-xs font-semibold ${recipientHasMinted ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {recipientHasMinted ? '✕ Already owns this type' : '✓ Can receive'}
+              </span>
+            </div>
+          )}
+
+          {/* transfer preview */}
+          {selectedType && resolvedTokenId != null && (
+            <div className="flex items-center justify-between rounded-xl border border-white/5 bg-gray-950/60 px-4 py-2.5">
+              <span className="text-xs text-gray-500">Transferring</span>
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${selectedType.badgeClass}`}>
+                  Legendary
+                </span>
+                <span className="text-sm font-semibold text-white">{selectedType.name}</span>
+                <span className="font-mono text-xs text-gray-500">#{resolvedTokenId.toString()}</span>
+              </div>
+            </div>
+          )}
+
+          {/* inline error */}
+          {inputError && <p className="text-xs text-rose-400">{inputError}</p>}
+
+          {/* tx states */}
+          {isConfirmed ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 py-3 text-sm font-semibold text-blue-300">
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              NFT transferred!
+            </div>
+          ) : isPending ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Confirm in wallet…
+            </div>
+          ) : isConfirming ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Transferring…
+            </div>
+          ) : (
+            <button
+              onClick={handleTransfer}
+              disabled={!isValidRecipient || selectedTypeIdNum === null || !!recipientHasMinted || isBusy}
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-blue-500 hover:to-blue-400 hover:shadow-lg hover:shadow-blue-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Transfer NFT →
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── ERC-1155 skeleton & holding card ────────────────────── */
 function SkeletonCard() {
   return (
@@ -800,14 +1144,34 @@ export default function Inventory() {
   // ERC-20 reads
   const { data: erc20Data, isLoading: erc20Loading, refetch: refetchErc20 } = useReadContracts({
     contracts: [
-      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_GOLD_ABI, functionName: 'balanceOf', args: [address ?? '0x0000000000000000000000000000000000000000'] },
-      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_GOLD_ABI, functionName: 'hasClaimed', args: [address ?? '0x0000000000000000000000000000000000000000'] },
+      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'balanceOf', args: [address ?? '0x0000000000000000000000000000000000000000'] },
+      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'hasClaimed', args: [address ?? '0x0000000000000000000000000000000000000000'] },
     ],
     query: { enabled: !!address && !!TOKEN_VERSE_ERC20_ADDRESS },
   });
 
   const tvgBalance  = erc20Data?.[0]?.status === 'success' ? erc20Data[0].result : null;
   const tvgClaimed  = erc20Data?.[1]?.status === 'success' ? erc20Data[1].result : false;
+
+  // ERC-721 reads
+  const { data: erc721Data, isLoading: erc721Loading, refetch: refetchErc721 } = useReadContracts({
+    contracts: [
+      { address: TOKEN_VERSE_ERC721_ADDRESS, abi: TOKEN_VERSE_ERC721_ABI, functionName: 'balanceOf', args: [address ?? '0x0000000000000000000000000000000000000000'] },
+      ...ERC721_TYPES.map((t) => ({
+        address: TOKEN_VERSE_ERC721_ADDRESS,
+        abi: TOKEN_VERSE_ERC721_ABI,
+        functionName: 'hasMintedType',
+        args: [address ?? '0x0000000000000000000000000000000000000000', BigInt(t.id)],
+      })),
+    ],
+    query: { enabled: !!address && !!TOKEN_VERSE_ERC721_ADDRESS },
+  });
+
+  const nftBalance = erc721Data?.[0]?.status === 'success' ? erc721Data[0].result : null;
+  const nftMinted  = ERC721_TYPES.map((_, i) =>
+    erc721Data?.[i + 1]?.status === 'success' ? erc721Data[i + 1].result : false,
+  );
+  const hasAnyNft = nftMinted.some(Boolean);
 
   // ERC-1155 reads
   const { data, isLoading, refetch } = useReadContracts({
@@ -862,6 +1226,7 @@ export default function Inventory() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <StatPill label="TVG Balance"   value={erc20Loading ? '—' : formatTVG(tvgBalance)} />
+            <StatPill label="NFTs Owned"    value={erc721Loading ? '—' : (nftBalance != null ? nftBalance.toString() : '0')} />
             <StatPill label="1155 Units"    value={isLoading ? '—' : totalUnits.toString()} />
             <StatPill label="1155 Types"    value={isLoading ? '—' : `${uniqueTypes} / ${TOKENS.length}`} />
           </div>
@@ -883,6 +1248,45 @@ export default function Inventory() {
             <TransferPanel balance={tvgBalance} onSuccess={refetchErc20} onNotify={notify} />
             <ApprovePanel ownerAddress={address} balance={tvgBalance} onSuccess={refetchErc20} onNotify={notify} />
           </div>
+        </div>
+
+        {/* ── ERC-721 section ──────────────────────────────────────── */}
+        <div className="mb-12">
+          <SectionHeader
+            eyebrow="ERC-721 · Non-Fungible Tokens"
+            title="Character NFTs"
+            accent="text-blue-400"
+          />
+
+          {!erc721Loading && !hasAnyNft && (
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-blue-500/20 bg-blue-500/5 px-6 py-4">
+              <span className="text-xl">🧙</span>
+              <div>
+                <p className="text-sm font-semibold text-blue-300">No character NFTs yet</p>
+                <p className="text-xs text-gray-400">Head to the ERC-721 page to claim a character.</p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {erc721Loading
+              ? ERC721_TYPES.map((t) => <SkeletonCard key={t.id} />)
+              : ERC721_TYPES.map((nftType) => (
+                  <ERC721HoldingCard
+                    key={nftType.id}
+                    nftType={nftType}
+                    hasMinted={nftMinted[nftType.id]}
+                  />
+                ))}
+          </div>
+
+          <ERC721TransferPanel
+            address={address}
+            nftMinted={nftMinted}
+            nftBalance={nftBalance}
+            onSuccess={refetchErc721}
+            onNotify={notify}
+          />
         </div>
 
         {/* ── ERC-1155 section ─────────────────────────────────────── */}
