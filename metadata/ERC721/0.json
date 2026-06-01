@@ -1,0 +1,27 @@
+{
+  "name": "Dragon Knight",
+  "description": "The sole warrior of TokenVerse who forged the legendary Dragon Sword. Bearer of this NFT commands the realm's mightiest blade.",
+  "image": "ipfs://bafybeif3awzqpskc3dtsd7k562nw4ctnhubtisav7nczbmy7uzgbm4joqi",
+  "attributes": [
+    {
+      "trait_type": "Class",
+      "value": "Warrior"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Steel"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Weapon",
+      "value": "Dragon Sword"
+    },
+    {
+      "trait_type": "Edition",
+      "value": "1 of 1"
+    }
+  ]
+}

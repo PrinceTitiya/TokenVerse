@@ -1,0 +1,27 @@
+{
+  "name": "Void Stalker",
+  "description": "A phantom rogue who moves between transactions unseen. No vault in TokenVerse has ever held against the Void Stalker.",
+  "image": "ipfs://bafybeibsfifb7z5degyt7h7vwkdnzqfnx7zdy7vudmeyn7z2hqdozfefte",
+  "attributes": [
+    {
+      "trait_type": "Class",
+      "value": "Rogue"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Shadow"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Weapon",
+      "value": "Void Daggers"
+    },
+    {
+      "trait_type": "Edition",
+      "value": "1 of 1"
+    }
+  ]
+}

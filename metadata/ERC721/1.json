@@ -1,0 +1,27 @@
+{
+  "name": "Ember Witch",
+  "description": "Ancient fire sorceress of TokenVerse who channels Dragon Glass into devastating flame. Her spells have turned kingdoms to ash.",
+  "image": "ipfs://bafybeieefdnvurup7fvj5d26q2o7nhmaxmw332l56qyzqityrhaarcgiza",
+  "attributes": [
+    {
+      "trait_type": "Class",
+      "value": "Mage"
+    },
+    {
+      "trait_type": "Element",
+      "value": "Fire"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Weapon",
+      "value": "Ember Staff"
+    },
+    {
+      "trait_type": "Edition",
+      "value": "1 of 1"
+    }
+  ]
+}
