@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 
 const STANDARD_LINKS = [
   { to: '/erc20',  label: 'ERC-20' },
+  { to: '/erc721', label: 'ERC-721' },
   { to: '/',       label: 'ERC-1155', end: true },
 ];
 
