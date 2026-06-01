@@ -1,5 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+
+// React 19 dev mode serializes component state for DevTools via JSON.stringify,
+// which throws on BigInt values returned by wagmi/viem. Teach it how to handle them.
+BigInt.prototype.toJSON = function () { return this.toString(); };
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
