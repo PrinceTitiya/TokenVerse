@@ -5,8 +5,15 @@ import { parseUnits } from 'viem';
 import {
   TOKENS, RARITY_CONFIG,
   TOKEN_VERSE_1155_ADDRESS, TOKEN_VERSE_ABI,
-  TOKEN_VERSE_ERC20_ADDRESS, TOKEN_VERSE_GOLD_ABI,
+  TOKEN_VERSE_ERC20_ADDRESS, TOKEN_VERSE_ERC20_ABI,
+  TOKEN_VERSE_ERC721_ADDRESS, TOKEN_VERSE_ERC721_ABI,
 } from '../constants/contracts';
+
+const ERC721_TYPES = [
+  { id: 0, name: 'Dragon Knight', class: 'Warrior', element: 'Steel'  },
+  { id: 1, name: 'Ember Witch',   class: 'Mage',    element: 'Fire'   },
+  { id: 2, name: 'Void Stalker',  class: 'Rogue',   element: 'Shadow' },
+];
 
 /* ─── shared: tx button ────────────────────────────────────── */
 function TxButton({ onClick, isPending, isConfirming, isConfirmed, disabled, label, confirmLabel = 'Done!' }) {
@@ -150,7 +157,7 @@ function ERC20MintForm({ isOwner, address }) {
     if (!recipient || !amount || Number(amount) <= 0) return;
     writeContract({
       address: TOKEN_VERSE_ERC20_ADDRESS,
-      abi: TOKEN_VERSE_GOLD_ABI,
+      abi: TOKEN_VERSE_ERC20_ABI,
       functionName: 'mint',
       args: [recipient, parseUnits(amount, 18)],
     });
@@ -546,6 +553,174 @@ function BatchMint({ isOwner, address }) {
   );
 }
 
+/* ─── ERC-721 education box ────────────────────────────────── */
+function ERC721EducationBox() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-blue-500/60 to-transparent" />
+      <div className="p-6">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-blue-400">How It Works</p>
+        <h3 className="mb-4 text-base font-bold text-white">ERC-721 Public Mint</h3>
+
+        <div className="mb-4 rounded-xl border border-white/5 bg-gray-900/60 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="rounded-lg bg-blue-500/10 px-2.5 py-1 font-mono text-xs font-bold text-blue-400">mint()</span>
+            <span className="text-xs text-gray-500">Public · one per type</span>
+          </div>
+          <p className="mb-3 text-xs leading-relaxed text-gray-400">
+            Any connected wallet can call this once per character type. The contract tracks
+            claims via a nested{' '}
+            <span className="font-mono text-gray-300">mapping(address =&gt; mapping(uint256 =&gt; bool))</span>{' '}
+            and reverts with{' '}
+            <span className="font-mono text-gray-300">AlreadyMinted</span> on a second attempt.
+            A global cap of 50 enforces scarcity across all types.
+          </p>
+          <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300">
+            <span className="text-blue-400">mint</span>
+            <span className="text-gray-500">(</span>
+            <span className="text-amber-300">uint256</span>{' '}typeId
+            <span className="text-gray-500">)</span>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3 rounded-xl border border-blue-500/15 bg-blue-500/5 px-4 py-3">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0 text-blue-400">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M5.5 8.5l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p className="text-xs leading-relaxed text-gray-400">
+            <span className="font-semibold text-blue-300">No owner required</span> — unlike
+            ERC-20 and ERC-1155 mints above, this function is open to any wallet. Tokens
+            always mint to{' '}
+            <span className="font-mono text-gray-300">msg.sender</span>; the{' '}
+            <span className="font-mono text-gray-300">typeId</span> determines which character
+            is assigned.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── ERC-721 mint form ─────────────────────────────────────── */
+function ERC721MintForm({ isConnected, address }) {
+  const [typeId, setTypeId] = useState('0');
+
+  const { data: alreadyMinted, refetch } = useReadContract({
+    address: TOKEN_VERSE_ERC721_ADDRESS,
+    abi: TOKEN_VERSE_ERC721_ABI,
+    functionName: 'hasMintedType',
+    args: [address ?? '0x0000000000000000000000000000000000000000', BigInt(typeId)],
+    query: { enabled: !!TOKEN_VERSE_ERC721_ADDRESS && isConnected },
+  });
+
+  const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      refetch();
+      const t = setTimeout(reset, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, refetch, reset]);
+
+  function handleMint() {
+    writeContract({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'mint',
+      args: [BigInt(typeId)],
+    });
+  }
+
+  const selectedType = ERC721_TYPES.find((t) => t.id.toString() === typeId);
+  const canSubmit = isConnected && !alreadyMinted;
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-gray-900 p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10">
+          <span className="font-mono text-sm font-bold text-blue-400">NFT</span>
+        </span>
+        <div>
+          <h3 className="text-base font-bold text-white">Mint Character NFT</h3>
+          <p className="text-xs text-gray-500">Calls <span className="font-mono text-gray-300">mint(typeId)</span></p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {/* recipient — read-only, contract always mints to msg.sender */}
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-gray-400">
+            Recipient
+            <span className="ml-2 text-gray-600">(mints to connected wallet)</span>
+          </label>
+          <div className="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 font-mono text-sm text-gray-500 truncate">
+            {address ?? <span className="text-gray-600">not connected</span>}
+          </div>
+        </div>
+
+        {/* character type */}
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-gray-400">Character Type</label>
+          <select
+            value={typeId}
+            onChange={(e) => setTypeId(e.target.value)}
+            disabled={!isConnected}
+            className="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-500/50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {ERC721_TYPES.map((t) => (
+              <option key={t.id} value={t.id.toString()}>
+                {t.name} — #{t.id} ({t.class} · {t.element})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* preview row */}
+        {selectedType && (
+          <div className="flex items-center justify-between rounded-xl border border-white/5 bg-gray-950/60 px-4 py-2.5">
+            <span className="text-xs text-gray-500">Minting</span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-semibold text-blue-400">
+                Legendary
+              </span>
+              <span className="text-sm font-semibold text-white">{selectedType.name}</span>
+              <span className="font-mono text-xs text-gray-500">Type #{selectedType.id}</span>
+            </div>
+          </div>
+        )}
+
+        {/* already-minted notice */}
+        {isConnected && alreadyMinted && (
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/5 py-2.5 text-xs font-semibold text-blue-400">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3" />
+              <path d="M6 4v3M6 8.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+            Already minted this type
+          </div>
+        )}
+
+        <TxButton
+          onClick={handleMint}
+          isPending={isPending}
+          isConfirming={isConfirming}
+          isConfirmed={isConfirmed}
+          disabled={!canSubmit}
+          label="Mint NFT"
+          confirmLabel="NFT minted!"
+        />
+
+        {!isConnected && (
+          <p className="text-center text-xs text-gray-600">Connect wallet to enable minting</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── page ─────────────────────────────────────────────────── */
 export default function MintLab() {
   const { address, isConnected } = useAccount();
@@ -559,7 +734,7 @@ export default function MintLab() {
 
   const { data: ownerERC20 } = useReadContract({
     address: TOKEN_VERSE_ERC20_ADDRESS,
-    abi: TOKEN_VERSE_GOLD_ABI,
+    abi: TOKEN_VERSE_ERC20_ABI,
     functionName: 'owner',
   });
 
@@ -616,6 +791,19 @@ export default function MintLab() {
           <div className="grid gap-6 lg:grid-cols-2">
             <ERC20EducationBox />
             <ERC20MintForm isOwner={isOwnerERC20} address={address} />
+          </div>
+        </div>
+
+        {/* ── ERC-721 section ──────────────────────────────────── */}
+        <div className="mb-12">
+          <SectionHeader
+            eyebrow="ERC-721 · TokenVerse NFT"
+            title="Mint Character NFTs"
+            accent="text-blue-400"
+          />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ERC721EducationBox />
+            <ERC721MintForm isConnected={isConnected} address={address} />
           </div>
         </div>
 
