@@ -7,7 +7,97 @@ export const TOKEN_VERSE_1155_ADDRESS = import.meta.env
 export const TOKEN_VERSE_ERC20_ADDRESS = import.meta.env
   .VITE_ERC20_CONTRACT_ADDRESS;
 
-export const TOKEN_VERSE_GOLD_ABI = [
+// ERC-721: TokenVerseNFT — update after `make deploy-erc721-local` or `make deploy-erc721-sepolia`
+export const TOKEN_VERSE_ERC721_ADDRESS = import.meta.env
+  .VITE_ERC721_CONTRACT_ADDRESS;
+
+export const TOKEN_VERSE_ERC721_ABI = [
+  {
+    type: "function",
+    name: "mint",
+    inputs: [{ name: "typeId", type: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "hasMintedType",
+    inputs: [
+      { name: "wallet", type: "address" },
+      { name: "typeId", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "tokenOfOwnerByIndex",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "index", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "tokenURI",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "string" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "safeTransferFrom",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "totalSupply",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "event",
+    name: "NFTMinted",
+    inputs: [
+      { name: "to", type: "address", indexed: true },
+      { name: "tokenId", type: "uint256", indexed: true },
+      { name: "typeId", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "error",
+    name: "TokenVerseNFT__InvalidType",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "TokenVerseNFT__AlreadyMinted",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "TokenVerseNFT__MaxSupplyReached",
+    inputs: [],
+  },
+];
+
+export const TOKEN_VERSE_ERC20_ABI = [
   {
     type: "function",
     name: "faucet",
