@@ -335,25 +335,25 @@ export default function ERC721() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                icon: '🔑',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/></svg>,
                 title: 'True Uniqueness',
                 body: 'Every ERC-721 token has a unique integer ID — tokenId. Two wallets can own token #1 and token #2, but never two copies of the same token. The contract enforces this at the lowest level.',
                 accent: 'border-blue-500/30 hover:border-blue-500/60',
               },
               {
-                icon: '📜',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>,
                 title: 'Provable Ownership',
                 body: 'ownerOf(tokenId) returns the current owner — no database, no platform, no intermediary. The ledger is the source of truth. Ownership transfers atomically when safeTransferFrom emits a Transfer event.',
                 accent: 'border-purple-500/30 hover:border-purple-500/60',
               },
               {
-                icon: '🎟️',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
                 title: 'Token-Gating',
                 body: 'NFT = key. Holding a specific tokenId can unlock a Discord server, a game level, a real-world event, or a governance vote. The same balanceOf() call that checks token count gates access.',
                 accent: 'border-amber-500/30 hover:border-amber-500/60',
               },
               {
-                icon: '⚡',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400"><path d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2z"/></svg>,
                 title: 'Public Mint Faucet',
                 body: 'Unlike the ERC-1155 Mint Lab which is owner-only, the TVNFT mint is open to any wallet — one of each character type per address. No deployer needed, same as production NFT drops.',
                 accent: 'border-rose-500/30 hover:border-rose-500/60',
@@ -363,7 +363,7 @@ export default function ERC721() {
                 key={title}
                 className={`rounded-2xl border bg-white/[0.03] p-5 text-left transition-all duration-200 ${accent}`}
               >
-                <span className="mb-3 block text-2xl">{icon}</span>
+                <span className="mb-3 block">{icon}</span>
                 <h3 className="mb-1.5 text-sm font-bold text-white">{title}</h3>
                 <p className="text-xs leading-relaxed text-gray-400">{body}</p>
               </div>

@@ -311,25 +311,25 @@ export default function ERC1155() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                icon: '⚡',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="M12 2L2 7l10 5 10-5-10-5zM2 12l10 5 10-5M2 17l10 5 10-5"/></svg>,
                 title: 'One Contract, All Tokens',
                 body: 'ERC-20 and ERC-721 require a fresh deployment per token type. ERC-1155 bundles unlimited token IDs into a single contract, slashing deployment cost and complexity.',
                 accent: 'border-amber-500/30 hover:border-amber-500/60',
               },
               {
-                icon: '🔀',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><circle cx="7" cy="12" r="4"/><rect x="13" y="8" width="8" height="8" rx="1"/></svg>,
                 title: 'Fungible & Non-Fungible',
                 body: 'A single standard covers both: token ID 1 can be a currency (many copies, identical value) while token ID 3 is a unique sword — no separate ERC-721 contract needed.',
                 accent: 'border-purple-500/30 hover:border-purple-500/60',
               },
               {
-                icon: '📦',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
                 title: 'Batch Operations',
                 body: 'Mint, transfer, or burn multiple token types in one transaction. One blockchain call instead of five cuts gas fees dramatically for games and marketplaces.',
                 accent: 'border-blue-500/30 hover:border-blue-500/60',
               },
               {
-                icon: '🔥',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>,
                 title: 'On-Chain Crafting',
                 body: 'Burn inputs to mint outputs — all in one atomic call. TokenVerse uses this for dismantling: trade 1 Dragon Sword for 100 Dragon Glass shards, no middleman.',
                 accent: 'border-rose-500/30 hover:border-rose-500/60',
@@ -339,7 +339,7 @@ export default function ERC1155() {
                 key={title}
                 className={`rounded-2xl border bg-white/[0.03] p-5 text-left transition-all duration-200 ${accent}`}
               >
-                <span className="mb-3 block text-2xl">{icon}</span>
+                <span className="mb-3 block">{icon}</span>
                 <h3 className="mb-1.5 text-sm font-bold text-white">{title}</h3>
                 <p className="text-xs leading-relaxed text-gray-400">{body}</p>
               </div>

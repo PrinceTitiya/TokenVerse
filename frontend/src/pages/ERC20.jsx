@@ -274,25 +274,25 @@ export default function ERC20() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                icon: '🪙',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400"><path d="M7 8h10M14 5l3 3-3 3M17 16H7M10 13l-3 3 3 3"/></svg>,
                 title: 'Perfectly Fungible',
                 body: 'Every TVG token is identical — 1 TVG always equals 1 TVG. No token IDs, no rarity, no uniqueness. This is what makes them usable as currency, fees, or collateral.',
                 accent: 'border-emerald-500/30 hover:border-emerald-500/60',
               },
               {
-                icon: '🔐',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>,
                 title: 'The Allowance Mechanism',
                 body: 'Before ERC-20, no standard existed for letting a smart contract spend tokens on your behalf. approve() + transferFrom() solved this and made DEXes, lending protocols, and DeFi possible.',
                 accent: 'border-blue-500/30 hover:border-blue-500/60',
               },
               {
-                icon: '🌐',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8"/><ellipse cx="12" cy="12" rx="4" ry="9"/></svg>,
                 title: 'Powers All of DeFi',
                 body: 'USDT, USDC, DAI, WETH, UNI, AAVE — every major DeFi asset is an ERC-20. The same four functions (transfer, approve, transferFrom, balanceOf) power trillions in daily volume.',
                 accent: 'border-amber-500/30 hover:border-amber-500/60',
               },
               {
-                icon: '⚡',
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2z"/></svg>,
                 title: 'Public Faucet',
                 body: 'Unlike the ERC-1155 Mint Lab which is owner-only, the TVG faucet is open to anyone. Any wallet can claim 1 000 TVG once — no deployer access needed.',
                 accent: 'border-purple-500/30 hover:border-purple-500/60',
@@ -302,7 +302,7 @@ export default function ERC20() {
                 key={title}
                 className={`rounded-2xl border bg-white/[0.03] p-5 text-left transition-all duration-200 ${accent}`}
               >
-                <span className="mb-3 block text-2xl">{icon}</span>
+                <span className="mb-3 block">{icon}</span>
                 <h3 className="mb-1.5 text-sm font-bold text-white">{title}</h3>
                 <p className="text-xs leading-relaxed text-gray-400">{body}</p>
               </div>
