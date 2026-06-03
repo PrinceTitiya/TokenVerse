@@ -479,7 +479,7 @@ export default function ERC20() {
           </p>
           <h2 className="mb-3 text-2xl font-bold text-white">Where ERC-20 Lives</h2>
           <p className="mx-auto mb-8 max-w-xl text-sm text-gray-400">
-            Every token below runs the same four-function interface you just learned.
+            Every token below works because the underlying asset is <span className="font-medium text-gray-300">fungible by design</span> — the identity of a specific token never matters, only the amount.
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -487,21 +487,21 @@ export default function ERC20() {
               {
                 category: 'Stablecoins',
                 examples: ['USDT', 'USDC', 'DAI'],
-                description: 'Pegged to $1. Used as on-chain dollars for payments, lending collateral, and exchange pairs. Combined market cap exceeds $150B.',
+                description: 'Fungibility is the requirement — USDC #42 must equal USDC #43, always. ERC-20\'s balance model enforces this automatically. An ERC-721 stablecoin would make every dollar a non-interchangeable collectible.',
                 accent: 'border-emerald-500/20 hover:border-emerald-500/40',
                 badge: 'bg-emerald-500/10 text-emerald-400',
               },
               {
                 category: 'Governance',
                 examples: ['UNI', 'AAVE', 'COMP'],
-                description: 'Holders vote on protocol upgrades, fee changes, and treasury spend. Token = on-chain voting power with no intermediary.',
+                description: 'Voting weight is a number, not a token ID. 1,000 UNI = 1,000 votes regardless of which specific tokens you hold. The balance model makes delegation, splitting, and on-chain tallying trivial.',
                 accent: 'border-purple-500/20 hover:border-purple-500/40',
                 badge: 'bg-purple-500/10 text-purple-400',
               },
               {
                 category: 'Wrapped Assets',
                 examples: ['WETH', 'WBTC', 'stETH'],
-                description: 'Native assets (ETH, BTC) wrapped into ERC-20 so DeFi protocols can treat them like any other token — same interface, same approvals.',
+                description: 'DeFi protocols call approve() and transferFrom() — they expect ERC-20. WETH bridges native ETH into that interface so Uniswap, Aave, and Compound can treat it identically to every other token.',
                 accent: 'border-amber-500/20 hover:border-amber-500/40',
                 badge: 'bg-amber-500/10 text-amber-400',
               },

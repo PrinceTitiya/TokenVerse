@@ -390,6 +390,63 @@ export default function ERC1155() {
           </div>
         </div>
 
+        {/* ── Where ERC-1155 is used ─────────────────────────────────── */}
+        <div className="mt-20 text-center">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-amber-400">
+            Real World
+          </p>
+          <h2 className="mb-3 text-2xl font-bold text-white">Where ERC-1155 Lives</h2>
+          <p className="mx-auto mb-8 max-w-xl text-sm text-gray-400">
+            Every project below works because the underlying system needs <span className="font-medium text-gray-300">multiple token types in one place</span> — a problem ERC-20 and ERC-721 can only solve with separate contract deployments.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[
+              {
+                category: 'Game Inventories',
+                examples: ['Enjin', 'Gods Unchained', 'TokenVerse'],
+                description: 'Gold coins (fungible), legendary weapons (capped edition), consumable potions — all live under one contract address. With ERC-721 you\'d need a separate deployment for every item type. ERC-1155 handles all of them as different integer IDs.',
+                accent: 'border-amber-500/20 hover:border-amber-500/40',
+                badge: 'bg-amber-500/10 text-amber-400',
+              },
+              {
+                category: 'Metaverse Assets',
+                examples: ['Decentraland', 'The Sandbox', 'OpenSea'],
+                description: 'Wearables, land add-ons, and limited cosmetic drops mix fungible supplies (50 copies of a hat) with unique items. ERC-1155 lets the same contract manage all tiers — its batch transfer makes distributing drops to thousands of wallets economical.',
+                accent: 'border-purple-500/20 hover:border-purple-500/40',
+                badge: 'bg-purple-500/10 text-purple-400',
+              },
+              {
+                category: 'Multi-Asset Drops',
+                examples: ['Airdrop campaigns', 'Loyalty rewards', 'Event passes'],
+                description: 'Sending 10 different reward tokens to 1,000 wallets via ERC-721 or ERC-20 costs 10,000 transactions. With safeBatchTransferFrom that collapses to 1,000 — one per recipient. The gas saving scales linearly with the number of token types.',
+                accent: 'border-blue-500/20 hover:border-blue-500/40',
+                badge: 'bg-blue-500/10 text-blue-400',
+              },
+            ].map(({ category, examples, description, accent, badge }) => (
+              <div
+                key={category}
+                className={`rounded-2xl border bg-white/[0.03] p-6 text-left transition-all duration-200 ${accent}`}
+              >
+                <span className={`mb-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${badge}`}>
+                  {category}
+                </span>
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {examples.map((ex) => (
+                    <span
+                      key={ex}
+                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-xs text-white"
+                    >
+                      {ex}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs leading-relaxed text-gray-400">{description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );

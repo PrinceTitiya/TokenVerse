@@ -549,29 +549,29 @@ export default function ERC721() {
           </p>
           <h2 className="mb-3 text-2xl font-bold text-white">Where ERC-721 Lives</h2>
           <p className="mx-auto mb-8 max-w-xl text-sm text-gray-400">
-            Every project below runs the same ownerOf / safeTransferFrom interface you just learned.
+            Every project below works because the underlying asset is <span className="font-medium text-gray-300">unique by design</span> — the specific token ID, not the quantity, is what carries value.
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
               {
-                category: 'Profile Pictures',
-                examples: ['BAYC', 'CryptoPunks', 'Azuki'],
-                description: 'Identity-layer NFTs. The tokenId is your on-chain avatar — used as a Twitter PFP, Discord role, club membership, and status signal. Combined blue-chip market cap exceeds $2B.',
+                category: 'Collectibles & PFPs',
+                examples: ['CryptoPunks', 'BAYC', 'Azuki'],
+                description: 'CryptoPunk #3100 is not interchangeable with #7804 — rarity, traits, and history make each one distinct. ownerOf(tokenId) is the immutable proof of provenance. A fungible token can\'t express that.',
                 accent: 'border-blue-500/20 hover:border-blue-500/40',
                 badge: 'bg-blue-500/10 text-blue-400',
               },
               {
-                category: 'Gaming & Metaverse',
-                examples: ['Axie', 'Gods Unchained', 'Parallel'],
-                description: 'In-game assets as NFTs — characters, cards, land. ERC-721 means you truly own the asset. Trade it on any marketplace, bridge it across games, or hold it after the game shuts down.',
+                category: 'Gaming Assets',
+                examples: ['Axie Infinity', 'Gods Unchained', 'Parallel'],
+                description: 'Each character, card, or item has a unique history — who bred it, who won it, every transfer on-chain. ERC-721\'s per-ID ownership model makes this provable. Fungible tokens can\'t record individual lineage.',
                 accent: 'border-purple-500/20 hover:border-purple-500/40',
                 badge: 'bg-purple-500/10 text-purple-400',
               },
               {
-                category: 'Real-World Assets',
-                examples: ['ENS', 'Tickets', 'Credentials'],
-                description: 'Domain names (ENS), event tickets, diplomas, legal documents. The uniqueness guarantee of ERC-721 makes it the natural fit for anything that must be provably one-of-a-kind.',
+                category: 'Identity & Domains',
+                examples: ['ENS', 'POAPs', 'Soulbound tokens'],
+                description: '"vitalik.eth" can have exactly one owner at any time — uniqueness is the product. ENS names are ERC-721 tokens: ownerOf tells you who controls the domain. No amount of a fungible token can express that.',
                 accent: 'border-amber-500/20 hover:border-amber-500/40',
                 badge: 'bg-amber-500/10 text-amber-400',
               },
