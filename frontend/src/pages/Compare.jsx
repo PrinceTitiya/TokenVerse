@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import StandardsComparisonTable from '../components/StandardsComparisonTable.jsx';
 import ArchitectureVisualizer from '../components/ArchitectureVisualizer.jsx';
 import GasComparisonChart from '../components/GasComparisonChart.jsx';
@@ -46,6 +47,46 @@ const TREE_STEPS = [
       badgeBg: 'bg-amber-500/10',
       glow: 'via-amber-500/40',
     },
+  },
+];
+
+/* ── Tradeoff comparison data (summary synthesis) ───────────────────────── */
+
+const TRADEOFFS = [
+  {
+    dimension: 'Contract simplicity',
+    desc: 'Interface surface and deployment cost',
+    erc20:   { label: 'Minimal',       note: '~1.3M gas deploy',          color: 'text-emerald-400' },
+    erc721:  { label: 'Moderate',      note: '~2.9M gas deploy',          color: 'text-amber-400'   },
+    erc1155: { label: 'Most complex',  note: '~2.6M gas deploy',          color: 'text-rose-400'    },
+  },
+  {
+    dimension: 'Gas at scale',
+    desc: 'Cost when operating on many tokens at once',
+    erc20:   { label: 'Linear',        note: 'each tx is separate',        color: 'text-amber-400'   },
+    erc721:  { label: 'Most expensive',note: '3.85× more than ERC-20',     color: 'text-rose-400'    },
+    erc1155: { label: 'Cheapest',      note: '86% less than 5× ERC-721',   color: 'text-emerald-400' },
+  },
+  {
+    dimension: 'DeFi composability',
+    desc: 'Works out-of-the-box with DEXs, lending, vaults',
+    erc20:   { label: 'Native',        note: 'every protocol supports it', color: 'text-emerald-400' },
+    erc721:  { label: 'Limited',       note: 'NFT-specific markets only',  color: 'text-amber-400'   },
+    erc1155: { label: 'Needs adapter', note: 'requires wrapping for DeFi', color: 'text-rose-400'    },
+  },
+  {
+    dimension: 'Asset provenance',
+    desc: 'Proving who owned a specific item and when',
+    erc20:   { label: 'None',          note: 'balances are fungible',      color: 'text-gray-500'    },
+    erc721:  { label: 'Complete',      note: 'per-token transfer history', color: 'text-emerald-400' },
+    erc1155: { label: 'Per type only', note: 'ID-level, not token-level',  color: 'text-amber-400'   },
+  },
+  {
+    dimension: 'Multi-asset in one contract',
+    desc: 'Currencies, items, and collectibles under one address',
+    erc20:   { label: 'One type only', note: null,                         color: 'text-gray-500'    },
+    erc721:  { label: 'One type only', note: null,                         color: 'text-gray-500'    },
+    erc1155: { label: 'Native',        note: 'any number of token IDs',    color: 'text-emerald-400' },
   },
 ];
 
@@ -283,6 +324,14 @@ export default function Compare() {
                     </span>
                   ))}
                 </div>
+
+                <Link
+                  to="/erc20"
+                  className="mt-5 flex items-center justify-between rounded-xl border border-emerald-500/25 bg-emerald-500/8 px-4 py-2.5 text-xs font-semibold text-emerald-400 transition-all duration-150 hover:border-emerald-500/50 hover:bg-emerald-500/15"
+                >
+                  Explore ERC-20
+                  <span className="text-emerald-500">→</span>
+                </Link>
               </div>
             </div>
 
@@ -331,6 +380,14 @@ export default function Compare() {
                     </span>
                   ))}
                 </div>
+
+                <Link
+                  to="/erc721"
+                  className="mt-5 flex items-center justify-between rounded-xl border border-blue-500/25 bg-blue-500/8 px-4 py-2.5 text-xs font-semibold text-blue-400 transition-all duration-150 hover:border-blue-500/50 hover:bg-blue-500/15"
+                >
+                  Explore ERC-721
+                  <span className="text-blue-500">→</span>
+                </Link>
               </div>
             </div>
 
@@ -373,12 +430,20 @@ export default function Compare() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {['Enjin', 'OpenSea', 'Gods Unchained', 'TokenVerse'].map((t) => (
+                  {['Enjin', 'OpenSea', 'Gods Unchained'].map((t) => (
                     <span key={t} className="rounded-full border border-amber-500/20 bg-amber-500/5 px-2.5 py-0.5 font-mono text-xs text-amber-300">
                       {t}
                     </span>
                   ))}
                 </div>
+
+                <Link
+                  to="/erc1155"
+                  className="mt-5 flex items-center justify-between rounded-xl border border-amber-500/25 bg-amber-500/8 px-4 py-2.5 text-xs font-semibold text-amber-400 transition-all duration-150 hover:border-amber-500/50 hover:bg-amber-500/15"
+                >
+                  Explore ERC-1155
+                  <span className="text-amber-500">→</span>
+                </Link>
               </div>
             </div>
           </div>
@@ -476,80 +541,50 @@ export default function Compare() {
             </p>
           </div>
 
-          {/* Quick-reference cards */}
-          <div className="mb-10 grid gap-5 sm:grid-cols-3">
-            {[
-              {
-                standard: 'ERC-20',
-                tagline: 'Fungible Currency',
-                colorLabel: 'text-emerald-400',
-                border: 'border-emerald-500/20 hover:border-emerald-500/40',
-                glow: 'via-emerald-500/40',
-                bg: 'hover:bg-emerald-500/[0.03]',
-                dot: 'bg-emerald-500',
-                model: 'mapping(address → uint256)',
-                principle: 'Every unit is identical. The contract tracks balances, not individual tokens.',
-                when: [
-                  'The asset should be divisible',
-                  'All units are worth the same',
-                  'DeFi composability is required',
-                ],
-              },
-              {
-                standard: 'ERC-721',
-                tagline: 'Non-Fungible Token',
-                colorLabel: 'text-blue-400',
-                border: 'border-blue-500/20 hover:border-blue-500/40',
-                glow: 'via-blue-500/40',
-                bg: 'hover:bg-blue-500/[0.03]',
-                dot: 'bg-blue-500',
-                model: 'mapping(uint256 → address)',
-                principle: 'Every token has a unique ID. Ownership is tracked per item, not per balance.',
-                when: [
-                  'Each token must be distinct',
-                  'Provenance and scarcity matter',
-                  'On-chain identity is the goal',
-                ],
-              },
-              {
-                standard: 'ERC-1155',
-                tagline: 'Multi-Token Standard',
-                colorLabel: 'text-amber-400',
-                border: 'border-amber-500/20 hover:border-amber-500/40',
-                glow: 'via-amber-500/40',
-                bg: 'hover:bg-amber-500/[0.03]',
-                dot: 'bg-amber-500',
-                model: 'mapping(uint256 → mapping(address → uint256))',
-                principle: 'One contract manages many token types. IDs can be fungible, non-fungible, or both.',
-                when: [
-                  'Multiple asset types in one system',
-                  'Batch operations reduce gas costs',
-                  'Gaming, metaverse, or hybrid protocols',
-                ],
-              },
-            ].map(({ standard, tagline, colorLabel, border, glow, bg, dot, model, principle, when }) => (
-              <div
-                key={standard}
-                className={`group overflow-hidden rounded-2xl border bg-white/[0.02] transition-all duration-200 ${border} ${bg}`}
-              >
-                <div className={`h-px w-full bg-gradient-to-r from-transparent ${glow} to-transparent`} />
-                <div className="p-6">
-                  <p className={`mb-0.5 text-xs font-bold uppercase tracking-widest ${colorLabel}`}>{standard}</p>
-                  <h3 className="mb-3 text-lg font-bold text-white">{tagline}</h3>
-                  <p className="mb-4 font-mono text-[11px] text-gray-500 leading-relaxed">{model}</p>
-                  <p className="mb-5 text-xs text-gray-400 leading-relaxed">{principle}</p>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-600">Choose when</p>
-                  <ul className="space-y-1.5">
-                    {when.map((w) => (
-                      <li key={w} className="flex items-start gap-2 text-xs text-gray-400">
-                        <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
-                        {w}
-                      </li>
+          {/* Tradeoff comparison — all three standards on the same dimensions */}
+          <div className="mb-10 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px] border-collapse">
+                <thead>
+                  <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-gray-600 w-[30%]">
+                      Tradeoff dimension
+                    </th>
+                    {[
+                      { label: 'ERC-20',   color: 'text-emerald-400' },
+                      { label: 'ERC-721',  color: 'text-blue-400'    },
+                      { label: 'ERC-1155', color: 'text-amber-400'   },
+                    ].map(({ label, color }) => (
+                      <th key={label} className="px-4 py-4 text-center w-[23%]">
+                        <span className={`text-xs font-bold ${color}`}>{label}</span>
+                      </th>
                     ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {TRADEOFFS.map(({ dimension, desc, erc20, erc721, erc1155 }, i) => (
+                    <tr
+                      key={dimension}
+                      className={`border-b border-white/[0.04] ${i === TRADEOFFS.length - 1 ? 'border-b-0' : ''}`}
+                    >
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-semibold text-white">{dimension}</p>
+                        <p className="mt-0.5 text-[11px] leading-snug text-gray-600">{desc}</p>
+                      </td>
+                      {[erc20, erc721, erc1155].map((cell, ci) => (
+                        <td key={ci} className="px-4 py-4 text-center">
+                          <p className={`text-xs font-semibold ${cell.color}`}>{cell.label}</p>
+                          {cell.note && (
+                            <p className="mt-0.5 text-[10px] leading-tight text-gray-600">{cell.note}</p>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Closing statement */}
@@ -563,15 +598,15 @@ export default function Compare() {
                 (gold, gems, weapons, tickets), and ERC-721 (Phase 3 — in progress) for unique-ownership identity proofs.
                 The right standard is never the most popular one — it is the one whose data model matches the asset.
               </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 {[
-                  { label: 'ERC-20 · TVG Token',       color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5' },
-                  { label: 'ERC-1155 · Game Inventory', color: 'border-amber-500/30 text-amber-400 bg-amber-500/5'       },
-                  { label: 'ERC-721 · Unique Assets',   color: 'border-blue-500/30 text-blue-400 bg-blue-500/5'         },
-                ].map(({ label, color }) => (
-                  <span key={label} className={`rounded-full border px-3 py-1 text-xs font-medium ${color}`}>
-                    {label}
-                  </span>
+                  { label: 'ERC-20 · TVG Token',       to: '/erc20',   color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5 hover:border-emerald-500/60 hover:bg-emerald-500/10' },
+                  { label: 'ERC-1155 · Game Inventory', to: '/erc1155', color: 'border-amber-500/30 text-amber-400 bg-amber-500/5 hover:border-amber-500/60 hover:bg-amber-500/10'           },
+                  { label: 'ERC-721 · Unique Assets',   to: '/erc721',  color: 'border-blue-500/30 text-blue-400 bg-blue-500/5 hover:border-blue-500/60 hover:bg-blue-500/10'               },
+                ].map(({ label, to, color }) => (
+                  <Link key={label} to={to} className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition-all duration-150 ${color}`}>
+                    {label} →
+                  </Link>
                 ))}
               </div>
             </div>
