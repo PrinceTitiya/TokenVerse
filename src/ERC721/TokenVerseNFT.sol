@@ -14,7 +14,6 @@ contract TokenVerseNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
     uint256 public constant EMBER_WITCH = 1;
     uint256 public constant VOID_STALKER = 2;
     uint256 public constant NFT_TYPES = 3;
-    uint256 public constant MAX_SUPPLY = 50;
 
     // STATE
 
@@ -28,7 +27,6 @@ contract TokenVerseNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
 
     error TokenVerseNFT__InvalidType();
     error TokenVerseNFT__AlreadyMinted();
-    error TokenVerseNFT__MaxSupplyReached();
 
     // EVENTS
 
@@ -45,7 +43,6 @@ contract TokenVerseNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Ownable {
     function mint(uint256 typeId) external {
         if (typeId >= NFT_TYPES) revert TokenVerseNFT__InvalidType();
         if (_hasMintedType[msg.sender][typeId]) revert TokenVerseNFT__AlreadyMinted();
-        if (_nextTokenId >= MAX_SUPPLY) revert TokenVerseNFT__MaxSupplyReached();
 
         uint256 tokenId = _nextTokenId++;
         _hasMintedType[msg.sender][typeId] = true;
