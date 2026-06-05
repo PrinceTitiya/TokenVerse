@@ -15,14 +15,26 @@ contract TokenVerse1155 is ERC1155, ERC1155Supply, Ownable {
     uint256 public constant EVENT_TICKET = 4;
     uint256 public constant DRAGON_GLASS = 5;
 
+    // FAUCET CONFIG
+
+    uint256 public constant STARTER_GOLD = 10;
+    uint256 public constant STARTER_GEMS = 5;
+    uint256 public constant STARTER_SWORDS = 1;
+
+    // STATE
+
+    mapping(address => bool) public hasClaimedStarterPack;
+
     // ERRORS
 
     error NotApproved();
     error InsufficientDragonSwords();
+    error TokenVerse1155__AlreadyClaimed();
 
     // EVENTS
 
     event SwordDismantled(address indexed user, uint256 dragonGlassReceived);
+    event StarterPackClaimed(address indexed claimer);
 
     // CONSTRUCTOR
     constructor()
@@ -38,6 +50,26 @@ contract TokenVerse1155 is ERC1155, ERC1155Supply, Ownable {
     // MINT BATCH
     function mintBatch(address to, uint256[] calldata ids, uint256[] calldata amounts) external onlyOwner {
         _mintBatch(to, ids, amounts, "");
+    }
+
+    // PUBLIC FAUCET — one starter pack per address: 10 GOLD, 5 GEMS, 1 DRAGON_SWORD
+    function claimStarterPack() external {
+        if (hasClaimedStarterPack[msg.sender]) revert TokenVerse1155__AlreadyClaimed();
+        hasClaimedStarterPack[msg.sender] = true;
+
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = GOLD;
+        ids[1] = GEMS;
+        ids[2] = DRAGON_SWORD;
+
+        uint256[] memory amounts = new uint256[](3);
+        amounts[0] = STARTER_GOLD;
+        amounts[1] = STARTER_GEMS;
+        amounts[2] = STARTER_SWORDS;
+
+        _mintBatch(msg.sender, ids, amounts, "");
+
+        emit StarterPackClaimed(msg.sender);
     }
 
     // BURN SINGLE
