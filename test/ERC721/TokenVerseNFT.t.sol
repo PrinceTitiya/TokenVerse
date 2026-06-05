@@ -3,6 +3,9 @@ pragma solidity ^0.8.26;
 
 import {Test, console} from "forge-std/Test.sol";
 import {TokenVerseNFT} from "src/ERC721/TokenVerseNFT.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 contract TokenVerseNFTTest is Test {
     TokenVerseNFT internal nft;
@@ -21,6 +24,12 @@ contract TokenVerseNFTTest is Test {
     // ========================================
 
     function setUp() public {
+        // On a fork, makeAddr() addresses may already have code deployed on the
+        // target network. ERC-721 safeMint calls onERC721Received on any recipient
+        // that has code, so we wipe those slots to force EOA behaviour.
+        vm.etch(user1, "");
+        vm.etch(user2, "");
+        vm.etch(user3, "");
         nft = new TokenVerseNFT();
     }
 
@@ -299,17 +308,14 @@ contract TokenVerseNFTTest is Test {
     // ========================================
 
     function testSupportsERC721Interface() public view {
-        // ERC721
-        assertTrue(nft.supportsInterface(0x80ac58cd));
+        assertTrue(nft.supportsInterface(type(IERC721).interfaceId));
     }
 
     function testSupportsERC721EnumerableInterface() public view {
-        // ERC721Enumerable
-        assertTrue(nft.supportsInterface(0x780e9d63));
+        assertTrue(nft.supportsInterface(type(IERC721Enumerable).interfaceId));
     }
 
     function testSupportsERC721MetadataInterface() public view {
-        // ERC721Metadata
-        assertTrue(nft.supportsInterface(0x5b5e139f));
+        assertTrue(nft.supportsInterface(type(IERC721Metadata).interfaceId));
     }
 }

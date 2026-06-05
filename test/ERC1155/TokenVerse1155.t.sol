@@ -17,6 +17,11 @@ contract TokenVerse1155Test is Test {
     // ========================================
 
     function setUp() public {
+        // On a fork, makeAddr() addresses may already have code deployed on the
+        // target network. ERC-1155 safe-transfer hooks call onERC1155Received on
+        // any recipient that has code, so we wipe those slots to force EOA behaviour.
+        vm.etch(user1, "");
+        vm.etch(user2, "");
         token = new TokenVerse1155();
     }
 
