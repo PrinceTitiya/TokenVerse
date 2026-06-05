@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAccount, useChainId, useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { formatUnits, parseUnits } from 'viem';
@@ -955,17 +955,61 @@ function ERC721TransferPanel({ address, nftMinted, nftBalance, onSuccess, onNoti
   const isValidRecipient = /^0x[0-9a-fA-F]{40}$/.test(recipient);
   const selectedTypeIdNum = selectedTypeId !== '' ? parseInt(selectedTypeId) : null;
 
-  // Live check: does recipient already own the selected character type?
-  const { data: recipientHasMinted } = useReadContract({
+  // Live ownership check for the recipient — three-step chain identical to the
+  // inventory display fix. hasMintedType cannot be used here: it only records
+  // who called mint() and is never cleared on transfer, so the original minter
+  // permanently returns true even after sending the NFT away (blocks send-back).
+  const { data: recipientBalRaw } = useReadContract({
     address: TOKEN_VERSE_ERC721_ADDRESS,
     abi: TOKEN_VERSE_ERC721_ABI,
-    functionName: 'hasMintedType',
-    args: [
-      isValidRecipient ? recipient : '0x0000000000000000000000000000000000000000',
-      BigInt(selectedTypeIdNum ?? 0),
-    ],
-    query: { enabled: isValidRecipient && selectedTypeIdNum !== null && !!TOKEN_VERSE_ERC721_ADDRESS },
+    functionName: 'balanceOf',
+    args: [isValidRecipient ? recipient : '0x0000000000000000000000000000000000000000'],
+    query: { enabled: isValidRecipient && !!TOKEN_VERSE_ERC721_ADDRESS },
   });
+  const recipientBalNum = recipientBalRaw != null ? Number(recipientBalRaw) : 0;
+
+  const { data: recipientIndexData } = useReadContracts({
+    contracts: [0n, 1n, 2n].map((i) => ({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'tokenOfOwnerByIndex',
+      args: [isValidRecipient ? recipient : '0x0000000000000000000000000000000000000000', i],
+    })),
+    query: { enabled: isValidRecipient && !!TOKEN_VERSE_ERC721_ADDRESS && recipientBalNum > 0 },
+  });
+
+  const recipientOwnedIds = [0, 1, 2]
+    .map((i) => recipientIndexData?.[i]?.status === 'success' ? recipientIndexData[i].result : null)
+    .filter((id) => id != null);
+
+  const { data: recipientUriData } = useReadContracts({
+    contracts: recipientOwnedIds.map((tokenId) => ({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'tokenURI',
+      args: [tokenId],
+    })),
+    query: { enabled: recipientOwnedIds.length > 0 },
+  });
+
+  const recipientOwnedTypeIds = new Set();
+  recipientOwnedIds.forEach((_, i) => {
+    const uri = recipientUriData?.[i]?.status === 'success' ? recipientUriData[i].result : null;
+    if (uri) {
+      const typeId = parseInt(uri.split('/').pop());
+      if (!isNaN(typeId)) recipientOwnedTypeIds.add(typeId);
+    }
+  });
+
+  // true = recipient currently holds a token of this exact type
+  const recipientOwnsType = selectedTypeIdNum !== null && recipientOwnedTypeIds.has(selectedTypeIdNum);
+
+  // loading: waiting for balance, or for index/uri chain when balance > 0
+  const recipientCheckLoading = isValidRecipient && (
+    recipientBalRaw === undefined ||
+    (recipientBalNum > 0 && recipientIndexData == null) ||
+    (recipientOwnedIds.length > 0 && recipientUriData == null)
+  );
 
   const { writeContract, data: txHash, isPending, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
@@ -988,7 +1032,8 @@ function ERC721TransferPanel({ address, nftMinted, nftBalance, onSuccess, onNoti
     setInputError('');
     if (!isValidRecipient) { setInputError('Enter a valid 0x address'); return; }
     if (selectedTypeIdNum === null) { setInputError('Select a character to transfer'); return; }
-    if (recipientHasMinted) { setInputError('Recipient already owns this character type'); return; }
+    if (recipientCheckLoading) { setInputError('Still checking recipient — try again in a moment'); return; }
+    if (recipientOwnsType) { setInputError('Recipient already holds this character type'); return; }
     const tokenId = typeToTokenId[selectedTypeIdNum];
     if (tokenId == null) { setInputError('Token not found — you may have already transferred it'); return; }
     writeContract({
@@ -1003,7 +1048,21 @@ function ERC721TransferPanel({ address, nftMinted, nftBalance, onSuccess, onNoti
   const resolvedTokenId = selectedTypeIdNum !== null ? typeToTokenId[selectedTypeIdNum] : null;
   const isBusy = isPending || isConfirming;
 
-  if (!hasAnyOwned) return null;
+  if (!hasAnyOwned) return (
+    <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/5 bg-gray-900 px-6 py-4">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10">
+        <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6h8M7 3l3 3-3 3" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-blue-300">No NFTs to transfer</p>
+        <p className="text-xs text-gray-500">
+          You don't hold any character NFTs. Mint one on the ERC-721 page, or ask someone to send you one.
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="mt-3 overflow-hidden rounded-2xl border border-white/5 bg-gray-900">
@@ -1079,14 +1138,23 @@ function ERC721TransferPanel({ address, nftMinted, nftBalance, onSuccess, onNoti
           {/* live recipient status */}
           {isValidRecipient && selectedTypeIdNum !== null && (
             <div className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
-              recipientHasMinted
-                ? 'border-rose-500/20 bg-rose-500/5'
-                : 'border-white/5 bg-white/[0.02]'
+              recipientCheckLoading
+                ? 'border-white/5 bg-white/[0.02]'
+                : recipientOwnsType
+                  ? 'border-rose-500/20 bg-rose-500/5'
+                  : 'border-white/5 bg-white/[0.02]'
             }`}>
               <span className="text-xs text-gray-500">Recipient status</span>
-              <span className={`text-xs font-semibold ${recipientHasMinted ? 'text-rose-400' : 'text-emerald-400'}`}>
-                {recipientHasMinted ? '✕ Already owns this type' : '✓ Can receive'}
-              </span>
+              {recipientCheckLoading ? (
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+                  <span className="h-3 w-3 animate-spin rounded-full border border-gray-500 border-t-transparent" />
+                  Checking…
+                </span>
+              ) : (
+                <span className={`text-xs font-semibold ${recipientOwnsType ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {recipientOwnsType ? '✕ Already holds this type' : '✓ Can receive'}
+                </span>
+              )}
             </div>
           )}
 
@@ -1128,7 +1196,7 @@ function ERC721TransferPanel({ address, nftMinted, nftBalance, onSuccess, onNoti
           ) : (
             <button
               onClick={handleTransfer}
-              disabled={!isValidRecipient || selectedTypeIdNum === null || !!recipientHasMinted || isBusy}
+              disabled={!isValidRecipient || selectedTypeIdNum === null || recipientOwnsType || recipientCheckLoading || isBusy}
               className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-blue-500 hover:to-blue-400 hover:shadow-lg hover:shadow-blue-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Transfer NFT →
@@ -1995,10 +2063,10 @@ export default function Inventory() {
   const { address, isConnected } = useAccount();
   const [toastMsg, setToastMsg] = useState(null);
 
-  function notify(message) {
+  const notify = useCallback((message) => {
     setToastMsg(message);
     setTimeout(() => setToastMsg(null), 3500);
-  }
+  }, []);
 
   // ERC-20 reads
   const { data: erc20Data, isLoading: erc20Loading, refetch: refetchErc20 } = useReadContracts({
@@ -2012,25 +2080,65 @@ export default function Inventory() {
   const tvgBalance  = erc20Data?.[0]?.status === 'success' ? erc20Data[0].result : null;
   const tvgClaimed  = erc20Data?.[1]?.status === 'success' ? erc20Data[1].result : false;
 
-  // ERC-721 reads
-  const { data: erc721Data, isLoading: erc721Loading, refetch: refetchErc721 } = useReadContracts({
-    contracts: [
-      { address: TOKEN_VERSE_ERC721_ADDRESS, abi: TOKEN_VERSE_ERC721_ABI, functionName: 'balanceOf', args: [address ?? '0x0000000000000000000000000000000000000000'] },
-      ...ERC721_TYPES.map((t) => ({
-        address: TOKEN_VERSE_ERC721_ADDRESS,
-        abi: TOKEN_VERSE_ERC721_ABI,
-        functionName: 'hasMintedType',
-        args: [address ?? '0x0000000000000000000000000000000000000000', BigInt(t.id)],
-      })),
-    ],
+  // ERC-721 reads — three-step chain: balance → tokenIds → typeIds via URI.
+  // We cannot use hasMintedType here because it only tracks who *minted*, not
+  // who currently *owns* the token after a safeTransferFrom.
+  const { data: nftBalRaw, isLoading: erc721BalLoading, refetch: refetchNftBal } = useReadContract({
+    address: TOKEN_VERSE_ERC721_ADDRESS,
+    abi: TOKEN_VERSE_ERC721_ABI,
+    functionName: 'balanceOf',
+    args: [address ?? '0x0000000000000000000000000000000000000000'],
     query: { enabled: !!address && !!TOKEN_VERSE_ERC721_ADDRESS },
   });
 
-  const nftBalance = erc721Data?.[0]?.status === 'success' ? erc721Data[0].result : null;
-  const nftMinted  = ERC721_TYPES.map((_, i) =>
-    erc721Data?.[i + 1]?.status === 'success' ? erc721Data[i + 1].result : false,
-  );
+  const nftBalance    = nftBalRaw ?? null;
+  const nftBalanceNum = nftBalance != null ? Number(nftBalance) : 0;
+
+  const { data: tokenIndexData, refetch: refetchTokenIdx } = useReadContracts({
+    contracts: [0n, 1n, 2n].map((i) => ({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'tokenOfOwnerByIndex',
+      args: [address ?? '0x0000000000000000000000000000000000000000', i],
+    })),
+    query: { enabled: !!address && !!TOKEN_VERSE_ERC721_ADDRESS && nftBalanceNum > 0 },
+  });
+
+  const ownedTokenIds = [0, 1, 2]
+    .map((i) => tokenIndexData?.[i]?.status === 'success' ? tokenIndexData[i].result : null)
+    .filter((id) => id != null);
+
+  const { data: nftUriData, refetch: refetchNftUris } = useReadContracts({
+    contracts: ownedTokenIds.map((tokenId) => ({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'tokenURI',
+      args: [tokenId],
+    })),
+    query: { enabled: ownedTokenIds.length > 0 },
+  });
+
+  const ownedTypeIds = new Set();
+  ownedTokenIds.forEach((_, i) => {
+    const uri = nftUriData?.[i]?.status === 'success' ? nftUriData[i].result : null;
+    if (uri) {
+      const typeId = parseInt(uri.split('/').pop());
+      if (!isNaN(typeId)) ownedTypeIds.add(typeId);
+    }
+  });
+
+  const nftMinted = ERC721_TYPES.map((t) => ownedTypeIds.has(t.id));
   const hasAnyNft = nftMinted.some(Boolean);
+
+  const erc721Loading = erc721BalLoading ||
+    (nftBalanceNum > 0 && tokenIndexData == null) ||
+    (ownedTokenIds.length > 0 && nftUriData == null);
+
+  const refetchErc721 = useCallback(() => {
+    refetchNftBal();
+    refetchTokenIdx();
+    refetchNftUris();
+  }, [refetchNftBal, refetchTokenIdx, refetchNftUris]);
 
   // ERC-1155 reads
   const { data, isLoading, refetch } = useReadContracts({
