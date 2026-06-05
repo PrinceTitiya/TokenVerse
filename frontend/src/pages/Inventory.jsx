@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAccount, useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useChainId, useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { formatUnits, parseUnits } from 'viem';
 import {
@@ -98,6 +98,125 @@ function ConnectPrompt() {
           </svg>
         </span>
       </button>
+    </div>
+  );
+}
+
+/* ─── contract info bar ────────────────────────────────────── */
+function AddressChip({ address, explorerBase, copiedKey, copied, onCopy }) {
+  const display = `${address.slice(0, 6)}…${address.slice(-4)}`;
+  const href = explorerBase ? `${explorerBase}/address/${address}` : null;
+  const isCopied = copied === copiedKey;
+
+  return (
+    <span className="flex items-center gap-1">
+      {href ? (
+        <a href={href} target="_blank" rel="noopener noreferrer"
+          className="font-mono text-xs text-gray-300 transition-colors hover:text-white">
+          {display}
+        </a>
+      ) : (
+        <span className="font-mono text-xs text-gray-300">{display}</span>
+      )}
+      <button
+        onClick={() => onCopy(address, copiedKey)}
+        title="Copy address"
+        className="text-gray-600 transition-colors hover:text-gray-300"
+      >
+        {isCopied ? (
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+            <rect x="4" y="4" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2" />
+            <path d="M2 8V2h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+    </span>
+  );
+}
+
+function ContractInfoBar({ contractAddress, abi, accent = 'text-amber-400', borderColor = 'border-amber-500/20', bgColor = 'bg-amber-500/[0.04]' }) {
+  const [copied, setCopied] = useState(null);
+  const chainId = useChainId();
+
+  const { data: ownerAddr } = useReadContract({
+    address: contractAddress,
+    abi,
+    functionName: 'owner',
+    query: { enabled: !!contractAddress },
+  });
+
+  const isSepolia = chainId === 11155111;
+  const isAnvil   = chainId === 31337;
+  const explorerBase = isSepolia ? 'https://sepolia.etherscan.io' : null;
+  const networkLabel = isSepolia ? 'Sepolia' : isAnvil ? 'Anvil' : `Chain ${chainId}`;
+  const networkDot   = isSepolia ? 'bg-blue-400' : isAnvil ? 'bg-orange-400' : 'bg-gray-500';
+
+  function copyTo(value, key) {
+    navigator.clipboard.writeText(value);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  return (
+    <div className={`mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border ${borderColor} ${bgColor} px-4 py-2.5`}>
+
+      {/* network */}
+      <span className="flex items-center gap-1.5">
+        <span className={`h-1.5 w-1.5 rounded-full ${networkDot}`} />
+        <span className="text-xs text-gray-500">{networkLabel}</span>
+      </span>
+
+      <span className="h-3 w-px bg-white/10" />
+
+      {/* contract address */}
+      <span className="flex items-center gap-1.5">
+        <span className="text-xs font-medium text-gray-500">Contract</span>
+        <AddressChip
+          address={contractAddress}
+          explorerBase={explorerBase}
+          copiedKey="contract"
+          copied={copied}
+          onCopy={copyTo}
+        />
+      </span>
+
+      <span className="h-3 w-px bg-white/10" />
+
+      {/* deployer / owner */}
+      <span className="flex items-center gap-1.5">
+        <span className="text-xs font-medium text-gray-500">Deployer</span>
+        {ownerAddr ? (
+          <AddressChip
+            address={ownerAddr}
+            explorerBase={explorerBase}
+            copiedKey="deployer"
+            copied={copied}
+            onCopy={copyTo}
+          />
+        ) : (
+          <span className="h-3 w-20 animate-pulse rounded bg-white/5" />
+        )}
+      </span>
+
+      {/* etherscan link – pinned right */}
+      {explorerBase && (
+        <a
+          href={`${explorerBase}/address/${contractAddress}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`ml-auto flex items-center gap-1 text-xs ${accent} opacity-50 transition-opacity hover:opacity-100`}
+        >
+          Etherscan
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+            <path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <path d="M8 2h2v2M10 2L6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </a>
+      )}
     </div>
   );
 }
@@ -1131,6 +1250,746 @@ function HoldingCard({ token, balance, dismantleState, onDismantle }) {
   );
 }
 
+/* ─── ERC-1155 batch transfer panel ───────────────────────── */
+function ERC1155BatchTransferPanel({ address, balances, onSuccess, onNotify }) {
+  const [isOpen, setIsOpen]       = useState(false);
+  const [recipient, setRecipient] = useState('');
+  const [amounts, setAmounts]     = useState({});
+  const [inputError, setInputError] = useState('');
+
+  const ownedTokens = balances.filter(({ balance }) => balance != null && balance > 0n);
+
+  const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      onSuccess?.();
+      onNotify?.('Batch transfer confirmed!');
+      const t = setTimeout(() => {
+        reset();
+        setRecipient('');
+        setAmounts({});
+        setInputError('');
+      }, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, onSuccess, onNotify, reset]);
+
+  function safeBig(str) {
+    try { const n = BigInt(str); return n >= 0n ? n : null; } catch { return null; }
+  }
+
+  const selected = ownedTokens.filter(({ token, balance }) => {
+    const n = safeBig(amounts[token.id.toString()]);
+    return n != null && n > 0n && n <= balance;
+  });
+
+  const isValidRecipient = /^0x[0-9a-fA-F]{40}$/.test(recipient);
+  const isBusy = isPending || isConfirming;
+
+  function handleBatchTransfer() {
+    setInputError('');
+    if (!isValidRecipient) { setInputError('Enter a valid 0x address'); return; }
+    if (selected.length === 0) { setInputError('Enter a valid amount for at least one token'); return; }
+    for (const { token, balance } of ownedTokens) {
+      const amt = amounts[token.id.toString()];
+      if (!amt) continue;
+      const n = safeBig(amt);
+      if (n == null || n <= 0n) { setInputError(`Invalid amount for ${token.name}`); return; }
+      if (n > balance) { setInputError(`Amount exceeds your balance for ${token.name}`); return; }
+    }
+    writeContract({
+      address: TOKEN_VERSE_1155_ADDRESS,
+      abi: TOKEN_VERSE_ABI,
+      functionName: 'safeBatchTransferFrom',
+      args: [
+        address,
+        recipient,
+        selected.map(({ token }) => token.id),
+        selected.map(({ token }) => BigInt(amounts[token.id.toString()])),
+        '0x',
+      ],
+    });
+  }
+
+  if (ownedTokens.length === 0) return null;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-white/5 bg-gray-900">
+      {/* accordion header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-white/[0.02]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 4h12M1 7h12M1 10h12" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Batch Transfer</p>
+            <p className="text-xs text-gray-500">Send multiple token types in one tx · safeBatchTransferFrom</p>
+          </div>
+        </div>
+        <svg
+          width="16" height="16" viewBox="0 0 12 12" fill="none"
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="space-y-4 border-t border-white/5 px-6 pb-6 pt-5">
+
+          {/* education callout */}
+          <div className="rounded-xl border border-amber-500/10 bg-amber-500/[0.05] px-4 py-3">
+            <p className="text-xs leading-relaxed text-gray-400">
+              <span className="font-semibold text-amber-300">safeBatchTransferFrom(from, to, ids[], amounts[], data)</span>{' '}
+              moves multiple token types to one address in a single transaction — emitting one{' '}
+              <span className="font-mono text-gray-300">TransferBatch</span> event instead of N{' '}
+              <span className="font-mono text-gray-300">TransferSingle</span> events.
+              This is ERC-1155's core gas advantage over ERC-20 and ERC-721.
+            </p>
+          </div>
+
+          {/* recipient */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Recipient Address
+            </label>
+            <input
+              type="text"
+              placeholder="0x..."
+              value={recipient}
+              onChange={(e) => { setRecipient(e.target.value); setInputError(''); }}
+              disabled={isBusy}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 disabled:opacity-50"
+            />
+          </div>
+
+          {/* token amount rows */}
+          <div>
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Amounts to Send
+            </label>
+            <div className="flex flex-col gap-2">
+              {ownedTokens.map(({ token, balance }) => {
+                const rarity  = RARITY_CONFIG[token.rarity];
+                const amt     = amounts[token.id.toString()] ?? '';
+                const n       = safeBig(amt);
+                const tooHigh = n != null && n > balance;
+                return (
+                  <div
+                    key={token.id}
+                    className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
+                      tooHigh ? 'border-rose-500/30 bg-rose-500/5' : 'border-white/5 bg-gray-950/40'
+                    }`}
+                  >
+                    {/* token info */}
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${rarity.badge}`}>
+                        {token.rarity}
+                      </span>
+                      <span className="truncate text-sm font-medium text-white">{token.name}</span>
+                      <span className="font-mono text-xs text-gray-600">#{token.id.toString()}</span>
+                    </div>
+                    {/* balance indicator */}
+                    <span className="shrink-0 text-xs text-gray-500">
+                      bal: <span className="font-mono text-gray-400">{balance.toString()}</span>
+                    </span>
+                    {/* amount input + MAX */}
+                    <div className="relative shrink-0">
+                      <input
+                        type="number"
+                        min="1"
+                        max={balance.toString()}
+                        value={amt}
+                        onChange={(e) => {
+                          setAmounts((prev) => ({ ...prev, [token.id.toString()]: e.target.value }));
+                          setInputError('');
+                        }}
+                        disabled={isBusy}
+                        placeholder="0"
+                        className={`w-24 rounded-lg border bg-gray-900 px-3 py-1.5 pr-10 text-right text-sm text-white placeholder-gray-600 outline-none transition focus:border-amber-500/50 disabled:opacity-30 ${
+                          tooHigh ? 'border-rose-500/40' : 'border-white/10'
+                        }`}
+                      />
+                      <button
+                        onClick={() => setAmounts((prev) => ({ ...prev, [token.id.toString()]: balance.toString() }))}
+                        disabled={isBusy}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded px-1 py-0.5 text-xs font-bold text-amber-400 hover:bg-amber-500/10 disabled:opacity-40"
+                      >
+                        MAX
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* live transfer preview */}
+          {selected.length > 0 && isValidRecipient && (
+            <div className="rounded-xl border border-white/5 bg-gray-950/60 px-4 py-3">
+              <p className="mb-2 text-xs text-gray-500">Sending</p>
+              <div className="flex flex-wrap gap-2">
+                {selected.map(({ token }) => {
+                  const rarity = RARITY_CONFIG[token.rarity];
+                  return (
+                    <span
+                      key={token.id}
+                      className={`rounded-full border border-current/20 px-2.5 py-0.5 text-xs font-semibold ${rarity.badge}`}
+                    >
+                      {token.name} × {amounts[token.id.toString()]}
+                    </span>
+                  );
+                })}
+              </div>
+              <p className="mt-2 font-mono text-xs text-gray-600">
+                to: {recipient.slice(0, 10)}…{recipient.slice(-8)}
+              </p>
+            </div>
+          )}
+
+          {/* inline error */}
+          {inputError && <p className="text-xs text-rose-400">{inputError}</p>}
+
+          {/* tx states */}
+          {isConfirmed ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 py-3 text-sm font-semibold text-emerald-400">
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Batch transfer confirmed!
+            </div>
+          ) : isPending ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Confirm in wallet…
+            </div>
+          ) : isConfirming ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Sending batch…
+            </div>
+          ) : (
+            <button
+              onClick={handleBatchTransfer}
+              disabled={!isValidRecipient || selected.length === 0 || isBusy}
+              className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-purple-500 py-3 text-sm font-semibold text-gray-950 transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {selected.length > 0
+                ? `Send ${selected.length} Token Type${selected.length > 1 ? 's' : ''} →`
+                : 'Enter amounts above to continue'}
+            </button>
+          )}
+
+          {/* on-chain signature callout */}
+          <div className="rounded-xl border border-white/5 bg-gray-950/60 px-4 py-3">
+            <p className="mb-1 text-xs text-gray-600">Calling on-chain</p>
+            <div className="font-mono text-xs text-gray-300">
+              <span className="text-amber-400">safeBatchTransferFrom</span>
+              <span className="text-gray-500">(from, to,</span>
+            </div>
+            <div className="font-mono text-xs text-gray-500 pl-4">
+              ids[{selected.map((s) => s.token.id.toString()).join(', ') || '…'}],
+            </div>
+            <div className="font-mono text-xs text-gray-500 pl-4">
+              amounts[{selected.map((s) => amounts[s.token.id.toString()]).join(', ') || '…'}]
+            </div>
+            <div className="font-mono text-xs text-gray-500">)</div>
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── ERC-20 burn panel ─────────────────────────────────────── */
+function BurnTVGPanel({ balance, onSuccess, onNotify }) {
+  const [isOpen, setIsOpen]     = useState(false);
+  const [amount, setAmount]     = useState('');
+  const [inputError, setInputError] = useState('');
+
+  const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      onSuccess?.();
+      onNotify?.('Tokens burned!');
+      const t = setTimeout(() => { reset(); setAmount(''); }, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, onSuccess, onNotify, reset]);
+
+  function handleBurn() {
+    setInputError('');
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      setInputError('Enter a valid amount');
+      return;
+    }
+    let parsed;
+    try { parsed = parseUnits(amount, 18); } catch { setInputError('Invalid amount'); return; }
+    if (parsed > balance) { setInputError('Amount exceeds your balance'); return; }
+    writeContract({
+      address: TOKEN_VERSE_ERC20_ADDRESS,
+      abi: TOKEN_VERSE_ERC20_ABI,
+      functionName: 'burn',
+      args: [parsed],
+    });
+  }
+
+  const isBusy = isPending || isConfirming;
+  if (!balance || balance === 0n) return null;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/5 bg-gray-900">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-white/[0.02]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/10">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#f87171" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 2C6.5 4.5 4 6 4 9a4 4 0 0 0 8 0c0-3-2.5-4.5-4-7Z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Burn TVG</p>
+            <p className="text-xs text-gray-500">Permanently destroy tokens · reduces total supply</p>
+          </div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 12 12" fill="none"
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="space-y-4 border-t border-white/5 px-6 pb-6 pt-5">
+          <div className="rounded-xl border border-rose-500/10 bg-rose-500/[0.05] px-4 py-3">
+            <p className="text-xs leading-relaxed text-gray-400">
+              <span className="font-semibold text-rose-300">burn(amount)</span> permanently destroys
+              tokens from your balance and reduces{' '}
+              <span className="font-mono text-gray-300">totalSupply</span> by the same amount —
+              unlike a transfer to <span className="font-mono text-gray-300">address(0)</span> which
+              moves tokens without updating the supply counter. This action is irreversible.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Amount to Burn (TVG)
+            </label>
+            <div className="relative">
+              <input
+                type="number" placeholder="0.00" min="0" value={amount}
+                onChange={(e) => { setAmount(e.target.value); setInputError(''); }}
+                disabled={isBusy}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 pr-16 text-sm text-white placeholder-gray-600 outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 disabled:opacity-50"
+              />
+              <button
+                onClick={() => balance && setAmount(formatUnits(balance, 18))}
+                disabled={isBusy || !balance}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-rose-500/20 px-2 py-0.5 text-xs font-bold text-rose-400 hover:bg-rose-500/30 disabled:opacity-40"
+              >MAX</button>
+            </div>
+            <p className="mt-1 text-right text-xs text-gray-600">
+              Balance: <span className="text-gray-400">{formatTVG(balance)} TVG</span>
+            </p>
+          </div>
+
+          {inputError && <p className="text-xs text-rose-400">{inputError}</p>}
+
+          {isConfirmed ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 py-3 text-sm font-semibold text-rose-300">
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Tokens burned!
+            </div>
+          ) : isPending ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Confirm in wallet…
+            </div>
+          ) : isConfirming ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Burning…
+            </div>
+          ) : (
+            <button onClick={handleBurn}
+              className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-rose-500 hover:to-rose-400 hover:shadow-lg hover:shadow-rose-500/20 active:scale-[0.98]"
+            >
+              Burn TVG →
+            </button>
+          )}
+
+          <div className="rounded-xl border border-white/5 bg-gray-950/60 px-4 py-3">
+            <p className="mb-1 text-xs text-gray-600">Calling on-chain</p>
+            <div className="font-mono text-xs text-gray-300">
+              <span className="text-rose-400">burn</span>
+              <span className="text-gray-500">(</span>
+              <span className="text-amber-300">uint256</span>
+              <span className="text-gray-300"> amount</span>
+              <span className="text-gray-500">)</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── ERC-1155 burn panel ────────────────────────────────────── */
+function Burn1155Panel({ address, balances, onSuccess, onNotify }) {
+  const [isOpen, setIsOpen]         = useState(false);
+  const [selectedId, setSelectedId] = useState('');
+  const [amount, setAmount]         = useState('');
+  const [inputError, setInputError] = useState('');
+
+  const ownedTokens = balances.filter(({ balance }) => balance != null && balance > 0n);
+  const selectedEntry = ownedTokens.find(({ token }) => token.id.toString() === selectedId);
+
+  const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      onSuccess?.();
+      onNotify?.('Tokens burned!');
+      const t = setTimeout(() => { reset(); setAmount(''); setSelectedId(''); }, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, onSuccess, onNotify, reset]);
+
+  function handleBurn() {
+    setInputError('');
+    if (!selectedId) { setInputError('Select a token type to burn'); return; }
+    if (!amount || isNaN(parseInt(amount)) || parseInt(amount) <= 0) {
+      setInputError('Enter a valid amount');
+      return;
+    }
+    const amtBig = BigInt(amount);
+    if (selectedEntry && amtBig > selectedEntry.balance) {
+      setInputError('Amount exceeds your balance');
+      return;
+    }
+    writeContract({
+      address: TOKEN_VERSE_1155_ADDRESS,
+      abi: TOKEN_VERSE_ABI,
+      functionName: 'burn',
+      args: [address, BigInt(selectedId), amtBig],
+    });
+  }
+
+  const isBusy = isPending || isConfirming;
+  if (ownedTokens.length === 0) return null;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-white/5 bg-gray-900">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-white/[0.02]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/10">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#f87171" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 2C6.5 4.5 4 6 4 9a4 4 0 0 0 8 0c0-3-2.5-4.5-4-7Z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Burn Tokens</p>
+            <p className="text-xs text-gray-500">Permanently destroy any token type · burn(from, id, amount)</p>
+          </div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 12 12" fill="none"
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="space-y-4 border-t border-white/5 px-6 pb-6 pt-5">
+          <div className="rounded-xl border border-rose-500/10 bg-rose-500/[0.05] px-4 py-3">
+            <p className="text-xs leading-relaxed text-gray-400">
+              <span className="font-semibold text-rose-300">burn(from, id, amount)</span> permanently
+              destroys tokens for a specific ID. Only the holder or an approved operator can call
+              this — enforced by a custom{' '}
+              <span className="font-mono text-gray-300">NotApproved</span> error on the contract.
+              This action is irreversible.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Token to Burn
+            </label>
+            <select
+              value={selectedId}
+              onChange={(e) => { setSelectedId(e.target.value); setAmount(''); setInputError(''); }}
+              disabled={isBusy}
+              className="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 text-sm text-white outline-none transition focus:border-rose-500/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <option value="">Select a token…</option>
+              {ownedTokens.map(({ token, balance }) => (
+                <option key={token.id} value={token.id.toString()}>
+                  {token.name} (ID #{token.id.toString()}) — balance: {balance.toString()}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedEntry && (
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                Amount to Burn
+              </label>
+              <div className="relative">
+                <input
+                  type="number" placeholder="0" min="1" value={amount}
+                  onChange={(e) => { setAmount(e.target.value); setInputError(''); }}
+                  disabled={isBusy}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 pr-16 text-sm text-white placeholder-gray-600 outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 disabled:opacity-50"
+                />
+                <button
+                  onClick={() => setAmount(selectedEntry.balance.toString())}
+                  disabled={isBusy}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-rose-500/20 px-2 py-0.5 text-xs font-bold text-rose-400 hover:bg-rose-500/30 disabled:opacity-40"
+                >MAX</button>
+              </div>
+              <p className="mt-1 text-right text-xs text-gray-600">
+                Balance: <span className="text-gray-400">{selectedEntry.balance.toString()}</span>
+              </p>
+            </div>
+          )}
+
+          {inputError && <p className="text-xs text-rose-400">{inputError}</p>}
+
+          {isConfirmed ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 py-3 text-sm font-semibold text-rose-300">
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Tokens burned!
+            </div>
+          ) : isPending ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Confirm in wallet…
+            </div>
+          ) : isConfirming ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Burning…
+            </div>
+          ) : (
+            <button
+              onClick={handleBurn}
+              disabled={!selectedId || !amount || isBusy}
+              className="w-full rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-rose-500 hover:to-rose-400 hover:shadow-lg hover:shadow-rose-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Burn Tokens →
+            </button>
+          )}
+
+          <div className="rounded-xl border border-white/5 bg-gray-950/60 px-4 py-3">
+            <p className="mb-1 text-xs text-gray-600">Calling on-chain</p>
+            <div className="font-mono text-xs text-gray-300">
+              <span className="text-rose-400">burn</span>
+              <span className="text-gray-500">(</span>
+              <span className="text-amber-300">address</span>
+              <span className="text-gray-300"> from, </span>
+              <span className="text-amber-300">uint256</span>
+              <span className="text-gray-300"> id, </span>
+              <span className="text-amber-300">uint256</span>
+              <span className="text-gray-300"> amount</span>
+              <span className="text-gray-500">)</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── ERC-721 operator approval panel ─────────────────────── */
+function SetApprovalForAllPanel({ address, onSuccess, onNotify }) {
+  const [isOpen, setIsOpen]     = useState(false);
+  const [operator, setOperator] = useState('');
+  const [inputError, setInputError] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
+
+  const isValidOperator = /^0x[0-9a-fA-F]{40}$/.test(operator);
+
+  const { data: isApproved, refetch: refetchApproval } = useReadContract({
+    address: TOKEN_VERSE_ERC721_ADDRESS,
+    abi: TOKEN_VERSE_ERC721_ABI,
+    functionName: 'isApprovedForAll',
+    args: [address ?? '0x0000000000000000000000000000000000000000', operator],
+    query: { enabled: isValidOperator && !!address && !!TOKEN_VERSE_ERC721_ADDRESS },
+  });
+
+  const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      onSuccess?.();
+      refetchApproval();
+      onNotify?.(pendingAction === 'grant' ? 'Operator approved!' : 'Approval revoked!');
+      const t = setTimeout(() => { reset(); setPendingAction(null); }, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, onSuccess, onNotify, refetchApproval, pendingAction, reset]);
+
+  function handleToggle(approve) {
+    setInputError('');
+    if (!isValidOperator) { setInputError('Enter a valid operator address'); return; }
+    setPendingAction(approve ? 'grant' : 'revoke');
+    writeContract({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'setApprovalForAll',
+      args: [operator, approve],
+    });
+  }
+
+  const isBusy = isPending || isConfirming;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-white/5 bg-gray-900">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-white/[0.02]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-purple-500/20 bg-purple-500/10">
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1L1 3v3c0 2.8 2.2 4.7 5 5 2.8-.3 5-2.2 5-5V3L6 1z" stroke="#a78bfa" strokeWidth="1.3" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Operator Approval</p>
+            <p className="text-xs text-gray-500">Grant or revoke full collection access · setApprovalForAll</p>
+          </div>
+        </div>
+        <svg
+          width="16" height="16" viewBox="0 0 12 12" fill="none"
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="space-y-4 border-t border-white/5 px-6 pb-6 pt-5">
+
+          <div className="rounded-xl border border-purple-500/10 bg-purple-500/[0.05] px-4 py-3">
+            <p className="text-xs leading-relaxed text-gray-400">
+              <span className="font-semibold text-purple-300">setApprovalForAll(operator, true)</span>{' '}
+              grants another address full control over every NFT you own — this is how marketplaces
+              like OpenSea list your tokens without per-token approvals. Call with{' '}
+              <span className="font-mono text-gray-300">false</span> to revoke at any time.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Operator Address
+            </label>
+            <input
+              type="text"
+              placeholder="0x…"
+              value={operator}
+              onChange={(e) => { setOperator(e.target.value); setInputError(''); }}
+              disabled={isBusy}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 disabled:opacity-50"
+            />
+          </div>
+
+          {isValidOperator && (
+            <div className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
+              isApproved
+                ? 'border-purple-500/30 bg-purple-500/5'
+                : 'border-white/5 bg-white/[0.02]'
+            }`}>
+              <span className="text-xs text-gray-500">Current status for this operator</span>
+              <span className={`flex items-center gap-1.5 text-xs font-semibold ${isApproved ? 'text-purple-400' : 'text-gray-500'}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${isApproved ? 'bg-purple-400' : 'bg-gray-600'}`} />
+                {isApproved === undefined ? '…' : isApproved ? 'Approved — full access granted' : 'Not approved'}
+              </span>
+            </div>
+          )}
+
+          {inputError && <p className="text-xs text-rose-400">{inputError}</p>}
+
+          {isConfirmed ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-purple-500/20 bg-purple-500/10 py-3 text-sm font-semibold text-purple-300">
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {pendingAction === 'grant' ? 'Operator approved!' : 'Approval revoked!'}
+            </div>
+          ) : isPending ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Confirm in wallet…
+            </div>
+          ) : isConfirming ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Updating approval…
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleToggle(true)}
+                disabled={isBusy || !isValidOperator || isApproved === true}
+                className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-purple-500 hover:to-purple-400 hover:shadow-lg hover:shadow-purple-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Grant Access
+              </button>
+              <button
+                onClick={() => handleToggle(false)}
+                disabled={isBusy || !isValidOperator || !isApproved}
+                className="rounded-xl border border-rose-500/30 bg-rose-500/10 py-3 text-sm font-semibold text-rose-400 transition-all duration-200 hover:bg-rose-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Revoke Access
+              </button>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-white/5 bg-gray-950/60 px-4 py-3">
+            <p className="mb-1 text-xs text-gray-600">Calling on-chain</p>
+            <div className="font-mono text-xs text-gray-300">
+              <span className="text-purple-400">setApprovalForAll</span>
+              <span className="text-gray-500">(</span>
+              <span className="text-amber-300">address</span>
+              <span className="text-gray-300"> operator, </span>
+              <span className="text-amber-300">bool</span>
+              <span className="text-gray-300"> approved</span>
+              <span className="text-gray-500">)</span>
+            </div>
+            <p className="mt-1 text-xs text-gray-600">
+              Emits <span className="font-mono text-gray-500">ApprovalForAll(owner, operator, approved)</span>
+            </p>
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── page ─────────────────────────────────────────────────── */
 export default function Inventory() {
   const { address, isConnected } = useAccount();
@@ -1239,6 +2098,13 @@ export default function Inventory() {
             title="TokenVerse Gold"
             accent="text-emerald-400"
           />
+          <ContractInfoBar
+            contractAddress={TOKEN_VERSE_ERC20_ADDRESS}
+            abi={TOKEN_VERSE_ERC20_ABI}
+            accent="text-emerald-400"
+            borderColor="border-emerald-500/20"
+            bgColor="bg-emerald-500/[0.04]"
+          />
           <ERC20HoldingCard
             balance={tvgBalance}
             hasClaimed={tvgClaimed}
@@ -1247,6 +2113,7 @@ export default function Inventory() {
           <div className="mt-3 flex flex-col gap-3">
             <TransferPanel balance={tvgBalance} onSuccess={refetchErc20} onNotify={notify} />
             <ApprovePanel ownerAddress={address} balance={tvgBalance} onSuccess={refetchErc20} onNotify={notify} />
+            <BurnTVGPanel balance={tvgBalance} onSuccess={refetchErc20} onNotify={notify} />
           </div>
         </div>
 
@@ -1256,6 +2123,13 @@ export default function Inventory() {
             eyebrow="ERC-721 · Non-Fungible Tokens"
             title="Character NFTs"
             accent="text-blue-400"
+          />
+          <ContractInfoBar
+            contractAddress={TOKEN_VERSE_ERC721_ADDRESS}
+            abi={TOKEN_VERSE_ERC721_ABI}
+            accent="text-blue-400"
+            borderColor="border-blue-500/20"
+            bgColor="bg-blue-500/[0.04]"
           />
 
           {!erc721Loading && !hasAnyNft && (
@@ -1287,6 +2161,11 @@ export default function Inventory() {
             onSuccess={refetchErc721}
             onNotify={notify}
           />
+          <SetApprovalForAllPanel
+            address={address}
+            onSuccess={refetchErc721}
+            onNotify={notify}
+          />
         </div>
 
         {/* ── ERC-1155 section ─────────────────────────────────────── */}
@@ -1296,6 +2175,13 @@ export default function Inventory() {
             title="TokenVerse Collection"
             accent="text-amber-400"
           />
+          <ContractInfoBar
+            contractAddress={TOKEN_VERSE_1155_ADDRESS}
+            abi={TOKEN_VERSE_ABI}
+            accent="text-amber-400"
+            borderColor="border-amber-500/20"
+            bgColor="bg-amber-500/[0.04]"
+          />
 
           {/* empty state */}
           {!isLoading && !hasAny1155 && (
@@ -1303,7 +2189,7 @@ export default function Inventory() {
               <span className="text-xl">🎒</span>
               <div>
                 <p className="text-sm font-semibold text-amber-300">No ERC-1155 tokens yet</p>
-                <p className="text-xs text-gray-400">Head to the Mint Lab to get started.</p>
+                <p className="text-xs text-gray-400">Head to the ERC-1155 page and claim your free Starter Pack.</p>
               </div>
             </div>
           )}
@@ -1321,6 +2207,19 @@ export default function Inventory() {
                   />
                 ))}
           </div>
+
+          <ERC1155BatchTransferPanel
+            address={address}
+            balances={balances}
+            onSuccess={refetch}
+            onNotify={notify}
+          />
+          <Burn1155Panel
+            address={address}
+            balances={balances}
+            onSuccess={refetch}
+            onNotify={notify}
+          />
         </div>
 
       </div>
