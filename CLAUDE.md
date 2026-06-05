@@ -30,13 +30,19 @@ make frontend                      # starts Vite dev server (localhost:5173)
 make simulate-deploy-1155-local    # dry-run against Anvil
 make deploy-1155-local             # broadcast to Anvil
 make simulate-deploy-1155-sepolia  # dry-run against Sepolia
-make deploy-sepolia                # broadcast + verify on Sepolia (ERC1155)
+make deploy-1155-sepolia           # broadcast + verify on Sepolia
 
 # Deploy ERC20 (TokenVerseGold)
 make simulate-deploy-erc20-local   # dry-run against Anvil
 make deploy-erc20-local            # broadcast to Anvil
 make simulate-deploy-erc20-sepolia # dry-run against Sepolia
 make deploy-erc20-sepolia          # broadcast + verify on Sepolia
+
+# Deploy ERC721 (TokenVerseNFT)
+make simulate-deploy-erc721-local  # dry-run against Anvil
+make deploy-erc721-local           # broadcast to Anvil
+make simulate-deploy-erc721-sepolia # dry-run against Sepolia
+make deploy-erc721-sepolia          # broadcast + verify on Sepolia
 
 # Mint (ERC1155 local only)
 make simulate-mint-1155-local
@@ -48,6 +54,7 @@ Raw forge equivalents when you need extra flags:
 ```shell
 forge test --match-path test/ERC1155/TokenVerse1155.t.sol -vvv
 forge test --match-path test/ERC20/TokenVerseGold.t.sol -vvv
+forge test --match-path test/ERC721/TokenVerseNFT.t.sol -vvv
 forge script script/DeployTokenVerse1155.s.sol --rpc-url http://localhost:8545 --broadcast
 ```
 
@@ -63,6 +70,7 @@ forge script script/DeployTokenVerse1155.s.sol --rpc-url http://localhost:8545 -
 | `ETHERSCAN_API_KEY` | Contract verification on Sepolia |
 | `VITE_ERC1155_CONTRACT_ADDRESS` | Frontend — deployed `TokenVerse1155` address |
 | `VITE_ERC20_CONTRACT_ADDRESS` | Frontend — deployed `TokenVerseGold` address |
+| `VITE_ERC721_CONTRACT_ADDRESS` | Frontend — deployed `TokenVerseNFT` address |
 | `VITE_WALLETCONNECT_PROJECT_ID` | Frontend — RainbowKit wallet connect modal |
 | `VITE_SEPOLIA_RPC_URL` | Frontend — transport for Sepolia in wagmi config |
 
@@ -72,14 +80,14 @@ After every fresh local deploy, the contract address changes — update the corr
 
 ### Project roadmap
 
-TokenVerse demonstrates ERC20, ERC721, and ERC1155 standards side-by-side. ERC1155 and ERC20 are implemented. New contracts follow the pattern: `src/ERC20/`, `src/ERC721/`, etc., with mirrored layout under `test/` and `script/`.
+TokenVerse demonstrates ERC20, ERC721, and ERC1155 standards side-by-side. All three contracts are implemented. New contracts follow the pattern: `src/ERC20/`, `src/ERC721/`, etc., with mirrored layout under `test/` and `script/`.
 
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 1 | ERC1155 — Contract + Frontend | Done |
-| 2 | ERC20 — Contract + Frontend | Contract done, frontend in progress |
-| 3 | ERC721 — Contract + Frontend | Pending |
-| 4 | Comparison Dashboard | Pending |
+| 2 | ERC20 — Contract + Frontend | Done (approve/transferFrom demo pending) |
+| 3 | ERC721 — Contract + Frontend | In Progress |
+| 4 | Comparison Dashboard | In Progress |
 | 5 | Deploy + Polish | Pending |
 
 ### Solidity (Foundry)
@@ -98,12 +106,20 @@ Solidity `^0.8.26`, OpenZeppelin as a git submodule. Remapping: `@openzeppelin/c
 - `mint(address, uint256)` is `onlyOwner`.
 - `faucet()` is public: mints 1000 TVG to the caller once per address, with a global cap of 100 total claims. Errors: `TokenVerseGold__AlreadyClaimed`, `TokenVerseGold__FaucetDepleted`.
 
+**`TokenVerseNFT`** (`src/ERC721/TokenVerseNFT.sol`) inherits `ERC721`, `ERC721URIStorage`, `ERC721Enumerable`, and `Ownable`. Symbol: `TVNFT`.
+
+- NFT type IDs are `uint256` constants: DRAGON_KNIGHT=0, EMBER_WITCH=1, VOID_STALKER=2. MAX_SUPPLY=50.
+- `mint(typeId)` is public: one per wallet per type, enforced via `_hasMintedType[address][typeId]`. Errors: `TokenVerseNFT__InvalidType`, `TokenVerseNFT__AlreadyMinted`, `TokenVerseNFT__MaxSupplyReached`.
+- Token URIs are set per-token at mint time using a hardcoded IPFS base URI + `typeId + ".json"`. Metadata lives in `metadata/ERC721/0.json`–`2.json`.
+- Diamond inheritance overrides required: `tokenURI`, `supportsInterface`, `_update`, `_increaseBalance`.
+
 ### Tests
 
 Tests mirror the `src/` layout under `test/`. Each contract deploys itself in `setUp()` with `address(this)` as owner. Use `vm.prank(user)` for non-owner calls; `makeAddr("user1")` for named addresses.
 
 - `test/ERC1155/TokenVerse1155.t.sol`
 - `test/ERC20/TokenVerseGold.t.sol`
+- `test/ERC721/TokenVerseNFT.t.sol`
 
 ### Frontend
 
@@ -111,11 +127,13 @@ React + Vite app in `frontend/`. Stack: Wagmi v2, RainbowKit v2, viem, TanStack 
 
 Provider order in `main.jsx`: `WagmiProvider` → `QueryClientProvider` → `RainbowKitProvider` → `BrowserRouter`.
 
-Routes: `/` (ERC1155), `/inventory`, `/mint-lab`, `/erc20`.
+Routes: `/compare` (default), `/erc1155`, `/inventory`, `/mint-lab`, `/erc20`, `/erc721`. `/` redirects to `/compare`.
 
-**`frontend/src/constants/contracts.js`** — single source of truth for the frontend. Exports `TOKEN_VERSE_1155_ADDRESS`, `TOKEN_VERSE_ERC20_ADDRESS`, `TOKEN_VERSE_ABI` (ERC1155), `TOKEN_VERSE_GOLD_ABI` (ERC20), `TOKENS` (metadata array for all 5 ERC1155 tokens), and `RARITY_CONFIG`. The ABI fragments are hand-maintained — update them manually if the contract interface changes.
+**`frontend/src/constants/contracts.js`** — single source of truth for the frontend. Exports `TOKEN_VERSE_1155_ADDRESS`, `TOKEN_VERSE_ERC20_ADDRESS`, `TOKEN_VERSE_ERC721_ADDRESS`, `TOKEN_VERSE_ABI` (ERC1155), `TOKEN_VERSE_GOLD_ABI` (ERC20), `TOKEN_VERSE_ERC721_ABI` (ERC721), `TOKENS` (metadata array for all 5 ERC1155 tokens), and `RARITY_CONFIG`. The ABI fragments are hand-maintained — update them manually if the contract interface changes.
 
 **`frontend/src/wagmi.config.js`** — explicit `transports` are required for both Sepolia and the local Anvil chain (id 31337). Without them, wagmi's `getDefaultConfig` may silently omit the transport, causing `to: None` errors on Anvil `eth_call` requests.
+
+**`frontend/src/pages/Compare.jsx`** — the comparison dashboard (Phase 4). Uses components from `frontend/src/components/`: `StandardsComparisonTable`, `GasComparisonChart`, `ArchitectureVisualizer`, `UseCaseCards`.
 
 ### CI
 
