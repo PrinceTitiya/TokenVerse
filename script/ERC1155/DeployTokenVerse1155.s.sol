@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.26;
 
 import {Script, console} from "forge-std/Script.sol";
 import {TokenVerse1155} from "../../src/ERC1155/TokenVerse1155.sol";
