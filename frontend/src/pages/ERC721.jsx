@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TOKEN_VERSE_ERC721_ADDRESS, TOKEN_VERSE_ERC721_ABI } from '../constants/contracts';
+import InventoryCTA, { ICONS } from '../components/InventoryCTA';
 
 const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
 
@@ -80,7 +81,6 @@ function MintSection() {
   const hasMinted = NFT_TYPES.map((_, i) =>
     data?.[i + 1]?.status === 'success' ? data[i + 1].result : false,
   );
-  const maxSupplyReached = totalSupply != null && totalSupply >= 50n;
 
   const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
@@ -116,29 +116,24 @@ function MintSection() {
         </p>
         <h2 className="mb-1 text-xl font-bold text-white">Mint — Claim a Character NFT</h2>
         <p className="mb-6 text-sm text-gray-400">
-          Public mint — any wallet can claim one of each character type while supply remains.
+          Public mint — any wallet can claim one of each character type. No global cap; the
+          per-wallet-per-type mapping is the only guard.
         </p>
 
-        {/* supply progress */}
+        {/* live minted counter */}
         <div className="mb-6 rounded-xl border border-white/5 bg-gray-900/60 p-5">
-          <div className="mb-2 flex items-end justify-between">
-            <p className="text-xs font-medium text-gray-500">Global Supply</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-500">Total NFTs Minted</p>
             <span className="text-sm font-semibold tabular-nums text-white">
               {isLoading ? (
-                <span className="h-4 w-12 animate-pulse rounded bg-white/10 inline-block" />
+                <span className="h-4 w-10 animate-pulse rounded bg-white/10 inline-block" />
               ) : (
-                <>{totalSupply != null ? totalSupply.toString() : '—'} / 50</>
+                totalSupply != null ? totalSupply.toString() : '—'
               )}
             </span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
-              style={{ width: totalSupply != null ? `${(Number(totalSupply) / 50) * 100}%` : '0%' }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-gray-600">
-            {totalSupply != null ? 50 - Number(totalSupply) : '—'} NFTs remaining across all types
+          <p className="mt-1 text-xs text-gray-600">
+            3 types · one per wallet per type · unlimited wallets
           </p>
         </div>
 
@@ -229,10 +224,6 @@ function MintSection() {
                         </svg>
                         Already Minted
                       </div>
-                    ) : maxSupplyReached ? (
-                      <div className="flex items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/5 py-2.5 text-xs font-semibold text-rose-400">
-                        Supply Exhausted
-                      </div>
                     ) : (
                       <button
                         onClick={() => handleMint(nftType.id)}
@@ -274,6 +265,24 @@ function MintSection() {
               : 'not deployed'}
           </div>
         </div>
+
+        {hasMinted.some(Boolean) && (
+          <InventoryCTA
+            accent={{
+              border: 'border-blue-500/20',
+              bg: 'bg-blue-500/[0.04]',
+              glow: 'via-blue-500/40',
+              label: 'text-blue-400',
+              iconClass: 'text-blue-400',
+              btn: 'bg-gradient-to-r from-blue-500 to-indigo-500',
+            }}
+            hint="Your NFT is on-chain and permanently in your wallet. Head to Inventory to explore ERC-721 ownership mechanics with your character."
+            items={[
+              { icon: ICONS.transfer, action: 'safeTransferFrom()', desc: 'transfer your NFT to any wallet — the contract verifies the recipient can hold it' },
+              { icon: ICONS.approve, action: 'setApprovalForAll()', desc: 'grant an operator address full control over your entire collection' },
+            ]}
+          />
+        )}
       </div>
     </div>
   );
@@ -296,9 +305,8 @@ export default function ERC721() {
             </span>
           </h1>
           <p className="mx-auto max-w-2xl text-base text-gray-400">
-            The standard behind every PFP collection, on-chain game asset, and digital credential.
-            Mint a live ERC-721 character — each token ID is provably unique, permanently owned,
-            and stored on-chain with full metadata.
+          The standard behind every PFP collection, on-chain game asset, and digital credential. 
+          Mint a live ERC-721 character — each token ID is provably unique, permanently owned on-chain, and backed by decentralized IPFS metadata.
           </p>
 
           {/* Stat pills */}
@@ -306,9 +314,8 @@ export default function ERC721() {
             {[
               { label: 'Standard',       value: 'ERC-721'   },
               { label: 'Symbol',         value: 'TVNFT'     },
-              { label: 'Max Supply',     value: '50'        },
+              { label: 'Per wallet',      value: '1 per type' },
               { label: 'Types',          value: '3'         },
-              { label: 'Per wallet',     value: '1 per type'},
             ].map(({ label, value }) => (
               <div
                 key={label}
@@ -336,8 +343,8 @@ export default function ERC721() {
             {[
               {
                 icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/></svg>,
-                title: 'True Uniqueness',
-                body: 'Every ERC-721 token has a unique integer ID — tokenId. Two wallets can own token #1 and token #2, but never two copies of the same token. The contract enforces this at the lowest level.',
+                title: 'Type ≠ Token ID',
+                body: 'typeId is metadata — it describes what kind of token it is. tokenId is the identity. If 50 wallets all mint Dragon Knight (typeId 0), each receives a different tokenId: #0, #1, #2… ownerOf(tokenId) always resolves to exactly one address, no matter how many tokens share the same type.',
                 accent: 'border-blue-500/30 hover:border-blue-500/60',
               },
               {
@@ -354,8 +361,8 @@ export default function ERC721() {
               },
               {
                 icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-rose-400"><path d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2z"/></svg>,
-                title: 'Public Mint Faucet',
-                body: 'Unlike the ERC-1155 Mint Lab which is owner-only, the TVNFT mint is open to any wallet — one of each character type per address. No deployer needed, same as production NFT drops.',
+                title: 'Public Mint',
+                body: 'TVNFT enforces one mint per character type per address via a nested mapping — no global supply cap needed. Any wallet can mint all three types permissionlessly, mirroring how real production NFT drops work: on-chain rules replace the deployer as the gatekeeper.',
                 accent: 'border-rose-500/30 hover:border-rose-500/60',
               },
             ].map(({ icon, title, body, accent }) => (
@@ -397,7 +404,7 @@ export default function ERC721() {
                   <span className="font-mono text-gray-300">mapping(address =&gt; mapping(uint256 =&gt; bool))</span>{' '}
                   and reverts with{' '}
                   <span className="font-mono text-gray-300">AlreadyMinted</span> on a second
-                  attempt. A global cap of 50 enforces scarcity.
+                  attempt. No global supply cap — the mapping alone enforces the rule.
                 </p>
                 <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300">
                   <span className="text-blue-400">mint</span>
@@ -409,8 +416,9 @@ export default function ERC721() {
                   <span className="text-gray-600">// mints tokenId N → msg.sender</span>
                 </div>
                 <p className="mt-3 text-xs text-gray-500">
-                  <span className="text-blue-400/80">_nextTokenId++</span> — each mint
-                  auto-increments the global token counter.
+                  <span className="text-blue-400/80">_nextTokenId++</span> — the global counter
+                  increments on every mint regardless of type, so two Dragon Knights minted by
+                  different wallets get distinct tokenIds.
                 </p>
               </div>
 
@@ -549,7 +557,7 @@ export default function ERC721() {
           </p>
           <h2 className="mb-3 text-2xl font-bold text-white">Where ERC-721 Lives</h2>
           <p className="mx-auto mb-8 max-w-xl text-sm text-gray-400">
-            Every project below works because the underlying asset is <span className="font-medium text-gray-300">unique by design</span> — the specific token ID, not the quantity, is what carries value.
+            Every project below works because the underlying asset is <span className="font-medium text-gray-300">unique by design</span> — the specific token ID is what carries value, not the quantity.
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -564,7 +572,7 @@ export default function ERC721() {
               {
                 category: 'Gaming Assets',
                 examples: ['Axie Infinity', 'Gods Unchained', 'Parallel'],
-                description: 'Each character, card, or item has a unique history — who bred it, who won it, every transfer on-chain. ERC-721\'s per-ID ownership model makes this provable. Fungible tokens can\'t record individual lineage.',
+                description: 'A game character, sword, or collectible NFT can be tracked throughout its lifetime—from minting to every owner it has ever had. ERC-721 makes this ownership history transparent and verifiable on-chain.',
                 accent: 'border-purple-500/20 hover:border-purple-500/40',
                 badge: 'bg-purple-500/10 text-purple-400',
               },

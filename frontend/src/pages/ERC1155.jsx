@@ -1,5 +1,8 @@
-import { useReadContracts } from 'wagmi';
+import { useEffect } from 'react';
+import { useReadContracts, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TOKENS, RARITY_CONFIG, TOKEN_VERSE_1155_ADDRESS, TOKEN_VERSE_ABI } from '../constants/contracts';
+import InventoryCTA, { ICONS } from '../components/InventoryCTA';
 
 const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
 
@@ -245,6 +248,240 @@ function HowItWorksBox() {
   );
 }
 
+/* ─── starter pack faucet ──────────────────────────────────── */
+function StarterPackSection() {
+  const { address, isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
+
+  const { data, isLoading, refetch } = useReadContracts({
+    contracts: [
+      {
+        address: TOKEN_VERSE_1155_ADDRESS,
+        abi: TOKEN_VERSE_ABI,
+        functionName: 'hasClaimedStarterPack',
+        args: [address ?? '0x0000000000000000000000000000000000000000'],
+      },
+      {
+        address: TOKEN_VERSE_1155_ADDRESS,
+        abi: TOKEN_VERSE_ABI,
+        functionName: 'balanceOf',
+        args: [address ?? '0x0000000000000000000000000000000000000000', 1n],
+      },
+      {
+        address: TOKEN_VERSE_1155_ADDRESS,
+        abi: TOKEN_VERSE_ABI,
+        functionName: 'balanceOf',
+        args: [address ?? '0x0000000000000000000000000000000000000000', 2n],
+      },
+      {
+        address: TOKEN_VERSE_1155_ADDRESS,
+        abi: TOKEN_VERSE_ABI,
+        functionName: 'balanceOf',
+        args: [address ?? '0x0000000000000000000000000000000000000000', 3n],
+      },
+    ],
+    query: { enabled: !!TOKEN_VERSE_1155_ADDRESS },
+  });
+
+  const alreadyClaimed = data?.[0]?.status === 'success' ? data[0].result : false;
+  const goldBalance    = data?.[1]?.status === 'success' ? data[1].result : null;
+  const gemsBalance    = data?.[2]?.status === 'success' ? data[2].result : null;
+  const swordBalance   = data?.[3]?.status === 'success' ? data[3].result : null;
+
+  const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      refetch();
+      const t = setTimeout(reset, 4000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, refetch, reset]);
+
+  function handleClaim() {
+    writeContract({ address: TOKEN_VERSE_1155_ADDRESS, abi: TOKEN_VERSE_ABI, functionName: 'claimStarterPack' });
+  }
+
+  function ClaimButton() {
+    if (!isConnected) {
+      return (
+        <button
+          onClick={openConnectModal}
+          className="w-full rounded-xl bg-white py-3 text-sm font-bold text-gray-900 transition-all hover:bg-gray-100"
+        >
+          Connect Wallet to Claim
+        </button>
+      );
+    }
+    if (isConfirmed) {
+      return (
+        <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 py-3 text-sm font-semibold text-emerald-400">
+          <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Starter Pack received!
+        </div>
+      );
+    }
+    if (isPending) {
+      return (
+        <div className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+          Confirm in wallet…
+        </div>
+      );
+    }
+    if (isConfirming) {
+      return (
+        <div className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+          Claiming…
+        </div>
+      );
+    }
+    if (alreadyClaimed) {
+      return (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/5 py-3 text-sm font-semibold text-blue-400">
+          <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+            <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M6 4v3M6 8.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          </svg>
+          Already Claimed
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={handleClaim}
+        className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-purple-500 py-3 text-sm font-bold text-gray-950 transition-all duration-200 hover:opacity-90"
+      >
+        Claim Starter Pack
+      </button>
+    );
+  }
+
+  const tokenRows = [
+    { label: 'Gold',         balance: goldBalance,  color: 'text-amber-400',  bg: 'bg-amber-500/10',  id: '1' },
+    { label: 'Gems',         balance: gemsBalance,  color: 'text-blue-400',   bg: 'bg-blue-500/10',   id: '2' },
+    { label: 'Dragon Sword', balance: swordBalance, color: 'text-purple-400', bg: 'bg-purple-500/10', id: '3' },
+  ];
+
+  return (
+    <div className="mb-14 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
+
+      <div className="p-8">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-amber-400">
+          Live Interaction
+        </p>
+        <h2 className="mb-1 text-xl font-bold text-white">Starter Pack — Try ERC-1155</h2>
+        <p className="mb-6 text-sm text-gray-400">
+          Claim your free tokens and experience batch minting first-hand. Under the hood this
+          calls <span className="font-mono text-gray-300">_mintBatch()</span> — one transaction
+          that mints three different token IDs atomically.
+        </p>
+
+        <div className="grid gap-6 md:grid-cols-2">
+
+          {/* Left — live balances */}
+          <div className="flex flex-col gap-3">
+            <p className="text-xs font-medium text-gray-500">Your Balances</p>
+            {tokenRows.map(({ label, balance, color, bg, id }) => (
+              <div
+                key={id}
+                className="flex items-center justify-between rounded-xl border border-white/5 bg-gray-900/60 px-5 py-4"
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`rounded-full px-2 py-0.5 font-mono text-xs font-bold ${bg} ${color}`}>
+                    #{id}
+                  </span>
+                  <span className="text-sm font-medium text-gray-300">{label}</span>
+                </div>
+                {isLoading ? (
+                  <div className="h-5 w-10 animate-pulse rounded bg-white/10" />
+                ) : (
+                  <span className="text-sm font-bold tabular-nums text-white">
+                    {isConnected && balance != null ? balance.toString() : '—'}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Right — claim panel */}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 rounded-xl border border-white/5 bg-gray-900/60 p-5">
+              <div>
+                <p className="mb-2 text-xs font-medium text-gray-500">What you'll receive</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400">10 Gold</span>
+                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-400">5 Gems</span>
+                  <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs font-bold text-purple-400">1 Dragon Sword</span>
+                </div>
+              </div>
+
+              <div className="border-t border-white/5 pt-4">
+                <ClaimButton />
+              </div>
+
+              {writeError && !isPending && !isConfirmed && (
+                <p className="text-center text-xs text-rose-400">
+                  Transaction rejected or failed. Try again.
+                </p>
+              )}
+
+              {isConnected && !isLoading && (
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <span>Pack status</span>
+                  <span className={alreadyClaimed ? 'text-blue-400' : 'text-amber-400'}>
+                    {alreadyClaimed ? 'Claimed' : 'Available'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* function signature callout */}
+            <div className="rounded-xl border border-white/5 bg-gray-950/60 px-4 py-3">
+              <p className="mb-1 text-xs text-gray-600">Calling on-chain</p>
+              <div className="font-mono text-xs text-gray-300">
+                <span className="text-amber-400">claimStarterPack</span>
+                <span className="text-gray-500">()</span>
+                <span className="ml-2 text-gray-600">→ _mintBatch([1,2,3], [10,5,1])</span>
+              </div>
+              <div className="mt-1 font-mono text-xs text-gray-600">
+                contract:{' '}
+                {TOKEN_VERSE_1155_ADDRESS
+                  ? `${TOKEN_VERSE_1155_ADDRESS.slice(0, 8)}…${TOKEN_VERSE_1155_ADDRESS.slice(-6)}`
+                  : 'not deployed'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {(alreadyClaimed || isConfirmed) && (
+          <InventoryCTA
+            accent={{
+              border: 'border-amber-500/20',
+              bg: 'bg-amber-500/[0.04]',
+              glow: 'via-amber-500/40',
+              label: 'text-amber-400',
+              iconClass: 'text-amber-400',
+              btn: 'bg-gradient-to-r from-amber-500 to-orange-500',
+            }}
+            hint="Your starter pack (10 Gold · 5 Gems · 1 Dragon Sword) is live on Sepolia. Head to Inventory to try ERC-1155 mechanics — including the on-chain crafting pattern unique to this standard."
+            items={[
+              { icon: ICONS.dismantle, action: 'dismantleDragonSword()', desc: 'burn 1 Dragon Sword and receive 100 Dragon Glass shards in one atomic transaction' },
+              { icon: ICONS.batch, action: 'safeBatchTransferFrom()', desc: 'send multiple token types to another wallet in a single call' },
+              { icon: ICONS.burn, action: 'burn()', desc: 'permanently destroy tokens from your balance' },
+            ]}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── page ─────────────────────────────────────────────────── */
 export default function ERC1155() {
   const { data } = useReadContracts({
@@ -388,6 +625,11 @@ export default function ERC1155() {
               </span>
             ))}
           </div>
+        </div>
+
+        {/* ── Starter Pack Faucet ────────────────────────────────── */}
+        <div className="mt-14">
+          <StarterPackSection />
         </div>
 
         {/* ── Where ERC-1155 is used ─────────────────────────────────── */}

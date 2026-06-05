@@ -3,6 +3,7 @@ import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionRe
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TOKEN_VERSE_ERC20_ADDRESS, TOKEN_VERSE_ERC20_ABI } from '../constants/contracts';
 import { formatUnits } from 'viem';
+import InventoryCTA, { ICONS } from '../components/InventoryCTA';
 
 /* ─── format TVG balance ───────────────────────────────────── */
 function formatTVG(raw) {
@@ -20,15 +21,14 @@ function FaucetSection() {
     contracts: [
       { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'balanceOf', args: [address ?? '0x0000000000000000000000000000000000000000'] },
       { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'hasClaimed', args: [address ?? '0x0000000000000000000000000000000000000000'] },
-      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'totalFaucetClaims' },
+      { address: TOKEN_VERSE_ERC20_ADDRESS, abi: TOKEN_VERSE_ERC20_ABI, functionName: 'totalSupply' },
     ],
     query: { enabled: !!TOKEN_VERSE_ERC20_ADDRESS },
   });
 
-  const balance       = data?.[0]?.status === 'success' ? data[0].result : null;
+  const balance        = data?.[0]?.status === 'success' ? data[0].result : null;
   const alreadyClaimed = data?.[1]?.status === 'success' ? data[1].result : false;
-  const totalClaims   = data?.[2]?.status === 'success' ? data[2].result : null;
-  const faucetDepleted = totalClaims != null && totalClaims >= 100n;
+  const totalSupply    = data?.[2]?.status === 'success' ? data[2].result : null;
 
   const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
@@ -94,13 +94,6 @@ function FaucetSection() {
         </div>
       );
     }
-    if (faucetDepleted) {
-      return (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/5 py-3 text-sm font-semibold text-rose-400">
-          Faucet Depleted — 100 / 100 claimed
-        </div>
-      );
-    }
     return (
       <button
         onClick={handleClaim}
@@ -119,9 +112,23 @@ function FaucetSection() {
         <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-emerald-400">
           Live Interaction
         </p>
-        <h2 className="mb-1 text-xl font-bold text-white">Faucet — Claim 1 000 TVG</h2>
+        <div className="mb-1 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-bold text-white">Faucet — Claim 1 000 TVG</h2>
+          <div className="flex shrink-0 items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/[0.07] px-3.5 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            {isLoading || totalSupply == null ? (
+              <span className="h-3 w-20 animate-pulse rounded bg-white/10" />
+            ) : (
+              <>
+                <span className="font-mono text-sm font-bold text-white">{formatTVG(totalSupply)}</span>
+                <span className="font-mono text-xs text-gray-400">TVG</span>
+              </>
+            )}
+            <span className="text-xs text-gray-500">Total Supply</span>
+          </div>
+        </div>
         <p className="mb-6 text-sm text-gray-400">
-          Public function — any wallet can claim once while the cap hasn't been reached.
+          Public function — any wallet can claim once. No global cap; the per-address mapping is the only guard.
         </p>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -142,24 +149,19 @@ function FaucetSection() {
               )}
             </div>
 
-            {/* Faucet counter */}
+            {/* Faucet status */}
             <div className="rounded-xl border border-white/5 bg-gray-900/60 p-5">
-              <p className="mb-2 text-xs font-medium text-gray-500">Faucet Claims</p>
-              <div className="mb-2 flex items-end justify-between">
-                <span className="text-2xl font-extrabold tabular-nums text-white">
-                  {totalClaims != null ? totalClaims.toString() : '—'}
-                </span>
-                <span className="text-sm text-gray-500">/ 100</span>
+              <p className="mb-2 text-xs font-medium text-gray-500">Faucet Status</p>
+              <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${
+                alreadyClaimed
+                  ? 'bg-blue-500/10 text-blue-400'
+                  : 'bg-emerald-500/10 text-emerald-400'
+              }`}>
+                <span className={`h-2 w-2 rounded-full ${alreadyClaimed ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+                {isLoading ? '…' : alreadyClaimed ? 'Claimed by this wallet' : 'Available for this wallet'}
               </div>
-              {/* progress bar */}
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-amber-500 transition-all duration-500"
-                  style={{ width: totalClaims != null ? `${(Number(totalClaims) / 100) * 100}%` : '0%' }}
-                />
-              </div>
-              <p className="mt-2 text-xs text-gray-600">
-                {totalClaims != null ? 100 - Number(totalClaims) : '—'} claims remaining
+              <p className="mt-3 text-xs text-gray-600">
+                One claim per address · unlimited wallets · no expiry
               </p>
             </div>
           </div>
@@ -190,8 +192,8 @@ function FaucetSection() {
               {isConnected && !isLoading && (
                 <div className="flex items-center justify-between text-xs text-gray-600">
                   <span>Claim status</span>
-                  <span className={alreadyClaimed ? 'text-blue-400' : faucetDepleted ? 'text-rose-400' : 'text-emerald-400'}>
-                    {alreadyClaimed ? 'Used' : faucetDepleted ? 'Depleted' : 'Available'}
+                  <span className={alreadyClaimed ? 'text-blue-400' : 'text-emerald-400'}>
+                    {alreadyClaimed ? 'Used' : 'Available'}
                   </span>
                 </div>
               )}
@@ -213,6 +215,25 @@ function FaucetSection() {
             </div>
           </div>
         </div>
+
+        {alreadyClaimed && (
+          <InventoryCTA
+            accent={{
+              border: 'border-emerald-500/20',
+              bg: 'bg-emerald-500/[0.04]',
+              glow: 'via-emerald-500/40',
+              label: 'text-emerald-400',
+              iconClass: 'text-emerald-400',
+              btn: 'bg-gradient-to-r from-emerald-500 to-teal-400',
+            }}
+            hint="Your 1,000 TVG is live on Sepolia. Head to Inventory to experience the core ERC-20 mechanics — the same ones powering every DeFi protocol."
+            items={[
+              { icon: ICONS.transfer, action: 'transfer()', desc: 'send TVG directly to any wallet address' },
+              { icon: ICONS.approve, action: 'approve() + transferFrom()', desc: 'delegate spending to another address — the DeFi allowance pattern' },
+              { icon: ICONS.burn, action: 'burn()', desc: 'permanently destroy tokens and reduce total supply' },
+            ]}
+          />
+        )}
       </div>
     </div>
   );
@@ -246,7 +267,7 @@ export default function ERC20() {
               { label: 'Standard',     value: 'ERC-20'  },
               { label: 'Symbol',       value: 'TVG'     },
               { label: 'Decimals',     value: '18'      },
-              { label: 'Faucet cap',   value: '100'     },
+              { label: 'Per wallet',   value: '1 claim'  },
               { label: 'Per claim',    value: '1 000'   },
             ].map(({ label, value }) => (
               <div
@@ -276,13 +297,13 @@ export default function ERC20() {
               {
                 icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400"><path d="M7 8h10M14 5l3 3-3 3M17 16H7M10 13l-3 3 3 3"/></svg>,
                 title: 'Perfectly Fungible',
-                body: 'Every TVG token is identical — 1 TVG always equals 1 TVG. No token IDs, no rarity, no uniqueness. This is what makes them usable as currency, fees, or collateral.',
+                body: 'Every token is identical. 1 TVG always equals 1 TVG. No token IDs, no rarity, no uniqueness. This is what makes them usable as currency, fees, or collateral.',
                 accent: 'border-emerald-500/30 hover:border-emerald-500/60',
               },
               {
                 icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>,
                 title: 'The Allowance Mechanism',
-                body: 'Before ERC-20, no standard existed for letting a smart contract spend tokens on your behalf. approve() + transferFrom() solved this and made DEXes, lending protocols, and DeFi possible.',
+                body: 'Before ERC-20, there were no standards for letting a smart contract spend tokens on your behalf. approve() + transferFrom() solved this and made DEXes, lending protocols, and DeFi possible.',
                 accent: 'border-blue-500/30 hover:border-blue-500/60',
               },
               {
@@ -294,7 +315,7 @@ export default function ERC20() {
               {
                 icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2z"/></svg>,
                 title: 'Public Faucet',
-                body: 'Unlike the ERC-1155 Mint Lab which is owner-only, the TVG faucet is open to anyone. Any wallet can claim 1 000 TVG once — no deployer access needed.',
+                body: 'Any wallet can claim 1 000 TVG once — no deployer access needed. Compare this to ERC-721 (one NFT per type per wallet) and ERC-1155 (a starter pack of multiple token types at once).',
                 accent: 'border-purple-500/30 hover:border-purple-500/60',
               },
             ].map(({ icon, title, body, accent }) => (
@@ -338,8 +359,7 @@ export default function ERC20() {
                   <span className="font-mono text-gray-300">mapping(address =&gt; bool)</span>{' '}
                   and reverts with{' '}
                   <span className="font-mono text-gray-300">AlreadyClaimed</span> on a second
-                  attempt. After 100 total claims it permanently reverts with{' '}
-                  <span className="font-mono text-gray-300">FaucetDepleted</span>.
+                  attempt. No global cap — the mapping alone enforces the rule, unlimited wallets can claim.
                 </p>
                 <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300">
                   <span className="text-emerald-400">faucet</span>
@@ -364,8 +384,8 @@ export default function ERC20() {
                 <p className="mb-4 text-xs leading-relaxed text-gray-400">
                   Moves tokens directly from{' '}
                   <span className="font-mono text-gray-300">msg.sender</span> to a recipient.
-                  No approval step needed — you push your own tokens. The EVM deducts from
-                  your balance and credits the recipient atomically, then emits a{' '}
+                  No approval required! you push your own tokens. The EVM deducts from
+                  your balance and credits the recipient. This is an atomic operation which emits a{' '}
                   <span className="font-mono text-gray-300">Transfer</span> event.
                 </p>
                 <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300">
@@ -395,9 +415,9 @@ export default function ERC20() {
                 <p className="mb-4 text-xs leading-relaxed text-gray-400">
                   The two-step allowance flow. First the owner calls{' '}
                   <span className="font-mono text-gray-300">approve(spender, amount)</span> to
-                  grant a spending limit. Then the spender calls{' '}
+                  grant a spending limit. On approval, the spender calls{' '}
                   <span className="font-mono text-gray-300">transferFrom(owner, to, amount)</span>{' '}
-                  to pull tokens. This is how every DEX swap and lending protocol works.
+                  to pull tokens lesser or equal to the approved amount. This is how every DEX swap and lending protocol works.
                 </p>
                 <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300 space-y-1">
                   <div>
@@ -413,8 +433,8 @@ export default function ERC20() {
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-gray-500">
-                  <span className="text-blue-400/80">allowance decreases</span> with each pull —
-                  the spender can never exceed what was approved.
+                  <span className="text-blue-400/80">allowance decreases</span> with each pull/spend. 
+                  Spender can never exceed what was approved.
                 </p>
               </div>
             </div>
@@ -433,35 +453,36 @@ export default function ERC20() {
                     burn() — Deflationary Supply
                   </p>
                   <p className="text-xs leading-relaxed text-gray-400">
-                    Any holder can destroy their own tokens by calling{' '}
-                    <span className="font-mono text-gray-300">burn(amount)</span>. This
-                    permanently reduces <span className="font-mono text-gray-300">totalSupply</span>{' '}
-                    — unlike a transfer to <span className="font-mono text-gray-300">address(0)</span>{' '}
-                    which moves tokens without updating the supply counter.
-                    <span className="font-mono text-gray-300"> burnFrom(owner, amount)</span> lets
-                    an approved spender burn on someone else's behalf.
+                    <span className="font-mono text-gray-300">burn(amount)</span> permanently
+                    removes tokens from circulation by reducing both the caller's balance and{' '}
+                    <span className="font-mono text-gray-300">totalSupply</span>. Unlike sending
+                    tokens to <span className="font-mono text-gray-300">address(0)</span>, burning
+                    keeps supply metrics accurate.{' '}
+                    <span className="font-mono text-gray-300">burnFrom()</span> allows approved
+                    contracts to burn tokens on a user's behalf, a pattern commonly used in
+                    cross-chain bridges to maintain a consistent total supply across networks.
                   </p>
                 </div>
               </div>
 
-              {/* no owner required callout */}
-              <div className="flex items-start gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/5 px-5 py-4">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0 text-emerald-400">
+              {/* mint — owner only */}
+              <div className="flex items-start gap-3 rounded-xl border border-amber-500/15 bg-amber-500/5 px-5 py-4">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0 text-amber-400">
                   <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
-                  <path d="M5.5 8.5l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M8 5v6M5 8h6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
                 <div>
-                  <p className="mb-1 text-xs font-semibold text-emerald-300">
-                    ERC-20 vs ERC-1155 Mint Lab
+                  <p className="mb-1 text-xs font-semibold text-amber-300">
+                    mint() — Owner-Controlled Supply
                   </p>
                   <p className="text-xs leading-relaxed text-gray-400">
-                    The Mint Lab requires you to be the contract owner. This page does not.
-                    The <span className="font-mono text-gray-300">faucet()</span>, {' '}
-                    <span className="font-mono text-gray-300">transfer()</span>, {' '}
-                    <span className="font-mono text-gray-300">approve()</span>, and {' '}
-                    <span className="font-mono text-gray-300">burn()</span> functions are all
-                    callable by any wallet — demonstrating a real permissionless token
-                    as it would exist in production.
+                    <span className="font-mono text-gray-300">mint(address, amount)</span> is
+                    restricted to the contract owner via{' '}
+                    <span className="font-mono text-gray-300">onlyOwner</span>. New tokens can
+                    only enter circulation through the deployer — every other supply change
+                    (faucet claims, burns) goes through public functions. This separation
+                    between privileged minting and permissionless transfers is the standard
+                    pattern for ERC-20 tokens in production.
                   </p>
                 </div>
               </div>
