@@ -1,15 +1,7 @@
-// Source: VITE_CONTRACT_ADDRESS in frontend/.env.local
-// Update this value after every fresh `make deploy-local` or `make deploy-sepolia`.
-export const TOKEN_VERSE_1155_ADDRESS = import.meta.env
-  .VITE_ERC1155_CONTRACT_ADDRESS;
-
-// ERC-20: TokenVerseGold — update after `make deploy-erc20-local` or `make deploy-erc20-sepolia`
-export const TOKEN_VERSE_ERC20_ADDRESS = import.meta.env
-  .VITE_ERC20_CONTRACT_ADDRESS;
-
-// ERC-721: TokenVerseNFT — update after `make deploy-erc721-local` or `make deploy-erc721-sepolia`
-export const TOKEN_VERSE_ERC721_ADDRESS = import.meta.env
-  .VITE_ERC721_CONTRACT_ADDRESS;
+// Update these after every fresh `make deploy-local` or `make deploy-sepolia`.
+export const TOKEN_VERSE_1155_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+export const TOKEN_VERSE_ERC20_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+export const TOKEN_VERSE_ERC721_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
 
 export const TOKEN_VERSE_ERC721_ABI = [
   {
@@ -91,9 +83,11 @@ export const TOKEN_VERSE_ERC721_ABI = [
     inputs: [],
   },
   {
-    type: "error",
-    name: "TokenVerseNFT__MaxSupplyReached",
+    type: "function",
+    name: "owner",
     inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
   },
 ];
 
@@ -179,13 +173,6 @@ export const TOKEN_VERSE_ERC20_ABI = [
   },
   {
     type: "function",
-    name: "totalFaucetClaims",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
     name: "hasClaimed",
     inputs: [{ name: "account", type: "address" }],
     outputs: [{ name: "", type: "bool" }],
@@ -209,11 +196,6 @@ export const TOKEN_VERSE_ERC20_ABI = [
   {
     type: "error",
     name: "TokenVerseGold__AlreadyClaimed",
-    inputs: [],
-  },
-  {
-    type: "error",
-    name: "TokenVerseGold__FaucetDepleted",
     inputs: [],
   },
 ];
@@ -305,6 +287,19 @@ export const TOKEN_VERSE_ABI = [
   },
   {
     type: "function",
+    name: "safeBatchTransferFrom",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "ids", type: "uint256[]" },
+      { name: "values", type: "uint256[]" },
+      { name: "data", type: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     name: "setApprovalForAll",
     inputs: [
       { name: "operator", type: "address" },
@@ -353,6 +348,25 @@ export const TOKEN_VERSE_ABI = [
     ],
   },
   {
+    type: "function",
+    name: "claimStarterPack",
+    inputs: [],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "hasClaimedStarterPack",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "event",
+    name: "StarterPackClaimed",
+    inputs: [{ name: "claimer", type: "address", indexed: true }],
+  },
+  {
     type: "error",
     name: "NotApproved",
     inputs: [],
@@ -360,6 +374,11 @@ export const TOKEN_VERSE_ABI = [
   {
     type: "error",
     name: "InsufficientDragonSwords",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "TokenVerse1155__AlreadyClaimed",
     inputs: [],
   },
 ];
