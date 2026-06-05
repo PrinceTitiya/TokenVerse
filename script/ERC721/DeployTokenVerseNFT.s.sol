@@ -15,7 +15,6 @@ contract DeployTokenVerseNFT is Script {
         console.log("Name                :", nft.name());
         console.log("Symbol              :", nft.symbol());
         console.log("NFT types           :", nft.NFT_TYPES());
-        console.log("Max supply          :", nft.MAX_SUPPLY());
 
         vm.stopBroadcast();
 

@@ -13,7 +13,6 @@ contract DeployTokenVerseGold is Script {
         console.log("TokenVerseGold deployed at:", address(token));
         console.log("Owner:", token.owner());
         console.log("Faucet amount:", token.FAUCET_AMOUNT());
-        console.log("Max faucet claims:", token.MAX_FAUCET_CLAIMS());
 
         vm.stopBroadcast();
 
