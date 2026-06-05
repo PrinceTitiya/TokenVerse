@@ -118,6 +118,48 @@ contract TokenVerse1155Test is Test {
         assertEq(totalSupply, 50);
     }
 
+    // TEST: STARTER PACK CLAIM
+
+    function testClaimStarterPack() public {
+        vm.prank(user1);
+        token.claimStarterPack();
+
+        assertEq(token.balanceOf(user1, token.GOLD()), token.STARTER_GOLD());
+        assertEq(token.balanceOf(user1, token.GEMS()), token.STARTER_GEMS());
+        assertEq(token.balanceOf(user1, token.DRAGON_SWORD()), token.STARTER_SWORDS());
+        assertTrue(token.hasClaimedStarterPack(user1));
+    }
+
+    function testCannotClaimStarterPackTwice() public {
+        vm.prank(user1);
+        token.claimStarterPack();
+
+        vm.prank(user1);
+        vm.expectRevert(TokenVerse1155.TokenVerse1155__AlreadyClaimed.selector);
+        token.claimStarterPack();
+    }
+
+    function testStarterPackEnablesDismantleDragonSword() public {
+        vm.startPrank(user1);
+        token.claimStarterPack();
+        token.dismantleDragonSword();
+        vm.stopPrank();
+
+        assertEq(token.balanceOf(user1, token.DRAGON_SWORD()), 0);
+        assertEq(token.balanceOf(user1, token.DRAGON_GLASS()), 100);
+    }
+
+    function testDifferentUsersCanEachClaim() public {
+        vm.prank(user1);
+        token.claimStarterPack();
+
+        vm.prank(user2);
+        token.claimStarterPack();
+
+        assertEq(token.balanceOf(user1, token.GOLD()), token.STARTER_GOLD());
+        assertEq(token.balanceOf(user2, token.GOLD()), token.STARTER_GOLD());
+    }
+
     // TEST: URI template contains {id} placeholder and correct IPFS CID
     function testUriContainsIdPlaceholder() public view {
         string memory expected = "ipfs://bafybeiddzghzwimp3nbwch6mqd4h3apqfah24hb2tbwwhdepukby6io5ni/{id}.json";

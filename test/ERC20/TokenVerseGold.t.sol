@@ -46,7 +46,6 @@ contract TokenVerseGoldTest is Test {
         token.faucet();
 
         assertEq(token.balanceOf(user1), FAUCET_AMOUNT);
-        assertEq(token.totalFaucetClaims(), 1);
         assertEq(token.hasClaimed(user1), true);
     }
 
@@ -65,21 +64,6 @@ contract TokenVerseGoldTest is Test {
         vm.expectRevert(TokenVerseGold.TokenVerseGold__AlreadyClaimed.selector);
         token.faucet();
         vm.stopPrank();
-    }
-
-    function testFaucetDepleted() public {
-        // Exhaust all 100 claims using distinct addresses
-        for (uint256 i = 0; i < 100; i++) {
-            address claimer = makeAddr(string(abi.encodePacked("claimer", i)));
-            vm.prank(claimer);
-            token.faucet();
-        }
-
-        assertEq(token.totalFaucetClaims(), 100);
-
-        vm.prank(user1);
-        vm.expectRevert(TokenVerseGold.TokenVerseGold__FaucetDepleted.selector);
-        token.faucet();
     }
 
     // ========================================

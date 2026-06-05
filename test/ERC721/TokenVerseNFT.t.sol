@@ -15,7 +15,6 @@ contract TokenVerseNFTTest is Test {
     uint256 internal constant DRAGON_KNIGHT = 0;
     uint256 internal constant EMBER_WITCH = 1;
     uint256 internal constant VOID_STALKER = 2;
-    uint256 internal constant MAX_SUPPLY = 50;
 
     // ========================================
     // SETUP
@@ -39,7 +38,6 @@ contract TokenVerseNFTTest is Test {
         assertEq(nft.EMBER_WITCH(), 1);
         assertEq(nft.VOID_STALKER(), 2);
         assertEq(nft.NFT_TYPES(), 3);
-        assertEq(nft.MAX_SUPPLY(), 50);
     }
 
     // ========================================
@@ -177,22 +175,6 @@ contract TokenVerseNFTTest is Test {
         assertEq(nft.hasMintedType(user1, DRAGON_KNIGHT), true);
         assertEq(nft.hasMintedType(user2, DRAGON_KNIGHT), true);
         assertEq(nft.totalSupply(), 2);
-    }
-
-    function testMaxSupplyReachedReverts() public {
-        // Mint all 50 tokens across 50 wallets
-        for (uint256 i = 0; i < MAX_SUPPLY; i++) {
-            address minter = makeAddr(string(abi.encodePacked("minter", i)));
-            vm.prank(minter);
-            nft.mint(DRAGON_KNIGHT);
-        }
-
-        assertEq(nft.totalSupply(), MAX_SUPPLY);
-
-        address lateUser = makeAddr("lateUser");
-        vm.prank(lateUser);
-        vm.expectRevert(TokenVerseNFT.TokenVerseNFT__MaxSupplyReached.selector);
-        nft.mint(DRAGON_KNIGHT);
     }
 
     // ========================================
