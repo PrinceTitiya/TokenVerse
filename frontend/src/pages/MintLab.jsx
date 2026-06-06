@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useReadContract, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { parseUnits } from 'viem';
 import {
@@ -321,8 +321,11 @@ function ERC1155EducationBox() {
 }
 
 /* ─── ERC-1155 single mint ─────────────────────────────────── */
+// Dragon Sword excluded — it has unique IDs managed by mintSwordFor / claimStarterPack
+const MINTABLE_TOKENS = TOKENS.filter((t) => t.id !== 3n);
+
 function SingleMint({ isOwner, address }) {
-  const [tokenId, setTokenId] = useState(TOKENS[0].id.toString());
+  const [tokenId, setTokenId] = useState(MINTABLE_TOKENS[0].id.toString());
   const [amount, setAmount] = useState('');
 
   const { writeContract, data: txHash, isPending, reset } = useWriteContract();
@@ -346,7 +349,7 @@ function SingleMint({ isOwner, address }) {
     });
   }
 
-  const selectedToken = TOKENS.find((t) => t.id.toString() === tokenId);
+  const selectedToken = MINTABLE_TOKENS.find((t) => t.id.toString() === tokenId);
   const rarity = selectedToken ? RARITY_CONFIG[selectedToken.rarity] : null;
   const canSubmit = isOwner && !!amount && Number(amount) > 0;
 
@@ -371,7 +374,7 @@ function SingleMint({ isOwner, address }) {
             disabled={!isOwner}
             className="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 text-sm text-white outline-none transition focus:border-amber-500/50 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {TOKENS.map((t) => (
+            {MINTABLE_TOKENS.map((t) => (
               <option key={t.id} value={t.id.toString()}>
                 {t.name} — #{t.id.toString()} ({t.rarity})
               </option>
@@ -427,7 +430,7 @@ function SingleMint({ isOwner, address }) {
 
 /* ─── ERC-1155 batch mint ──────────────────────────────────── */
 const initBatch = () =>
-  Object.fromEntries(TOKENS.map((t) => [t.id.toString(), { checked: false, amount: '' }]));
+  Object.fromEntries(MINTABLE_TOKENS.map((t) => [t.id.toString(), { checked: false, amount: '' }]));
 
 function BatchMint({ isOwner, address }) {
   const [selections, setSelections] = useState(initBatch);
@@ -451,7 +454,7 @@ function BatchMint({ isOwner, address }) {
     setSelections((prev) => ({ ...prev, [id]: { ...prev[id], amount: val } }));
   }
 
-  const selected = TOKENS.filter(
+  const selected = MINTABLE_TOKENS.filter(
     (t) => selections[t.id.toString()]?.checked && Number(selections[t.id.toString()].amount) > 0,
   );
 
@@ -484,7 +487,7 @@ function BatchMint({ isOwner, address }) {
       </div>
 
       <div className="mb-4 flex flex-col gap-2">
-        {TOKENS.map((t) => {
+        {MINTABLE_TOKENS.map((t) => {
           const sel = selections[t.id.toString()];
           const rarity = RARITY_CONFIG[t.rarity];
           return (
@@ -549,6 +552,145 @@ function BatchMint({ isOwner, address }) {
       {!isOwner && (
         <p className="mt-3 text-center text-xs text-gray-600">Connect as owner to enable minting</p>
       )}
+    </div>
+  );
+}
+
+/* ─── ERC-1155 gift sword (owner only) ────────────────────── */
+function MintSwordForWallet({ isOwner }) {
+  const [recipient, setRecipient] = useState('');
+
+  const isValidAddr = /^0x[0-9a-fA-F]{40}$/.test(recipient.trim());
+  const queryAddr = isValidAddr ? recipient.trim() : '0x0000000000000000000000000000000000000000';
+
+  const { data: preflightData, refetch } = useReadContracts({
+    contracts: [
+      { address: TOKEN_VERSE_1155_ADDRESS, abi: TOKEN_VERSE_ABI, functionName: 'hasClaimedStarterPack', args: [queryAddr] },
+      { address: TOKEN_VERSE_1155_ADDRESS, abi: TOKEN_VERSE_ABI, functionName: 'swordIdOf', args: [queryAddr] },
+    ],
+    query: { enabled: isValidAddr },
+  });
+
+  const hasClaimed = preflightData?.[0]?.result ?? false;
+  const theirSwordId = preflightData?.[1]?.result ?? 0n;
+  const hasSwordAssigned = theirSwordId >= 1000n;
+
+  const { data: swordBalance } = useReadContract({
+    address: TOKEN_VERSE_1155_ADDRESS,
+    abi: TOKEN_VERSE_ABI,
+    functionName: 'balanceOf',
+    args: [queryAddr, theirSwordId],
+    query: { enabled: isValidAddr && hasSwordAssigned },
+  });
+
+  const holdsSword = hasSwordAssigned && (swordBalance ?? 0n) > 0n;
+  const canMint = isOwner && isValidAddr && !hasClaimed && !holdsSword;
+
+  const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      refetch();
+      const t = setTimeout(reset, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, refetch, reset]);
+
+  function handleMint() {
+    if (!canMint) return;
+    writeContract({
+      address: TOKEN_VERSE_1155_ADDRESS,
+      abi: TOKEN_VERSE_ABI,
+      functionName: 'mintSwordFor',
+      args: [recipient.trim()],
+    });
+  }
+
+  let statusEl = null;
+  if (isValidAddr) {
+    if (hasClaimed) {
+      statusEl = (
+        <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-xs font-semibold text-red-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+          Wallet already claimed starter pack — cannot receive a gifted sword
+        </div>
+      );
+    } else if (holdsSword) {
+      statusEl = (
+        <div className="flex items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-2.5 text-xs font-semibold text-orange-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+          Already holds Dragon Sword #{theirSwordId.toString()}
+        </div>
+      );
+    } else {
+      statusEl = (
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-2.5 text-xs font-semibold text-emerald-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          Eligible — no starter pack claimed, no sword held
+        </div>
+      );
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-amber-500/20 bg-gray-900 p-6 md:col-span-2">
+      <div className="mb-5 flex items-center gap-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10">
+          <span className="font-mono text-sm font-bold text-amber-400">⚔</span>
+        </span>
+        <div>
+          <h3 className="text-base font-bold text-white">Gift Dragon Sword</h3>
+          <p className="text-xs text-gray-500">
+            Calls <span className="font-mono text-gray-300">mintSwordFor(to)</span> — owner only · 1 per wallet · unique ID
+          </p>
+        </div>
+        <span className="ml-auto rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400">
+          NFT-like
+        </span>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-gray-400">Recipient wallet</label>
+            <input
+              type="text"
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              placeholder="0x…"
+              disabled={!isOwner}
+              className="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 outline-none transition focus:border-amber-500/50 disabled:cursor-not-allowed disabled:opacity-40"
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-white/5 bg-gray-950/60 px-4 py-2.5">
+            <span className="text-xs text-gray-500">Amount</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-white">1</span>
+              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-400">Locked</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="min-h-[2.75rem]">{statusEl}</div>
+
+          <TxButton
+            onClick={handleMint}
+            isPending={isPending}
+            isConfirming={isConfirming}
+            isConfirmed={isConfirmed}
+            disabled={!canMint}
+            label="Gift Dragon Sword"
+            confirmLabel="Dragon Sword gifted!"
+          />
+
+          {!isOwner && (
+            <p className="text-center text-xs text-gray-600">Connect as owner to gift swords</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -818,6 +960,7 @@ export default function MintLab() {
           <div className="grid gap-6 md:grid-cols-2">
             <SingleMint isOwner={isOwner1155} address={address} />
             <BatchMint isOwner={isOwner1155} address={address} />
+            <MintSwordForWallet isOwner={isOwner1155} />
           </div>
         </div>
 
