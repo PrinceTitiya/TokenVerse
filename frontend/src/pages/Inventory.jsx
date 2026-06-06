@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAccount, useChainId, useReadContracts, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { formatUnits, parseUnits } from 'viem';
@@ -138,15 +139,19 @@ function AddressChip({ address, explorerBase, copiedKey, copied, onCopy }) {
   );
 }
 
+const ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
+
 function ContractInfoBar({ contractAddress, abi, accent = 'text-amber-400', borderColor = 'border-amber-500/20', bgColor = 'bg-amber-500/[0.04]' }) {
   const [copied, setCopied] = useState(null);
   const chainId = useChainId();
 
-  const { data: ownerAddr } = useReadContract({
+  const isValidAddress = !!contractAddress && ADDRESS_REGEX.test(contractAddress);
+
+  const { data: ownerAddr, isError: ownerError } = useReadContract({
     address: contractAddress,
     abi,
     functionName: 'owner',
-    query: { enabled: !!contractAddress },
+    query: { enabled: isValidAddress },
   });
 
   const isSepolia = chainId === 11155111;
@@ -161,6 +166,34 @@ function ContractInfoBar({ contractAddress, abi, accent = 'text-amber-400', bord
     setTimeout(() => setCopied(null), 1500);
   }
 
+  /* ── not deployed ── */
+  if (!contractAddress) {
+    return (
+      <div className={`mb-4 flex items-center gap-2.5 rounded-xl border ${borderColor} ${bgColor} px-4 py-2.5`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${networkDot}`} />
+        <span className="text-xs text-gray-500">{networkLabel}</span>
+        <span className="h-3 w-px bg-white/10" />
+        <span className="font-mono text-xs text-gray-600">not deployed</span>
+      </div>
+    );
+  }
+
+  /* ── invalid address format ── */
+  if (!isValidAddress) {
+    return (
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-2.5">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="shrink-0 text-rose-400">
+          <path d="M8 2L1 14h14L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M8 7v3M8 11.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+        <span className="text-xs font-semibold text-rose-400">Invalid address</span>
+        <span className="h-3 w-px bg-white/10" />
+        <span className="max-w-[180px] truncate font-mono text-xs text-rose-300/70">{contractAddress}</span>
+      </div>
+    );
+  }
+
+  /* ── valid address ── */
   return (
     <div className={`mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border ${borderColor} ${bgColor} px-4 py-2.5`}>
 
@@ -186,14 +219,16 @@ function ContractInfoBar({ contractAddress, abi, accent = 'text-amber-400', bord
 
       <span className="h-3 w-px bg-white/10" />
 
-      {/* deployer / owner */}
+      {/*/ owner */}
       <span className="flex items-center gap-1.5">
-        <span className="text-xs font-medium text-gray-500">Deployer</span>
-        {ownerAddr ? (
+        <span className="text-xs font-medium text-gray-500">Owner:</span>
+        {ownerError ? (
+          <span className="font-mono text-xs text-rose-400/70">unreachable</span>
+        ) : ownerAddr ? (
           <AddressChip
             address={ownerAddr}
             explorerBase={explorerBase}
-            copiedKey="deployer"
+            copiedKey="Owner"
             copied={copied}
             onCopy={copyTo}
           />
@@ -1704,7 +1739,10 @@ function BurnTVGPanel({ balance, onSuccess, onNotify }) {
               tokens from your balance and reduces{' '}
               <span className="font-mono text-gray-300">totalSupply</span> by the same amount —
               unlike a transfer to <span className="font-mono text-gray-300">address(0)</span> which
-              moves tokens without updating the supply counter. This action is irreversible.
+              moves tokens without updating the supply counter. This action is irreversible.{' '}
+              Real-world uses include deflationary tokenomics (protocols burn a fee cut each
+              transaction to make the token scarcer over time) and token redemption flows (burn
+              TVG to unlock an in-game item or service).
             </p>
           </div>
 
@@ -1851,7 +1889,10 @@ function Burn1155Panel({ address, balances, onSuccess, onNotify }) {
               destroys tokens for a specific ID. Only the holder or an approved operator can call
               this — enforced by a custom{' '}
               <span className="font-mono text-gray-300">NotApproved</span> error on the contract.
-              This action is irreversible.
+              This action is irreversible.{' '}
+              Common reasons to burn: crafting recipes that consume materials (burn Gold + Gems
+              to forge a new item), ticket redemption (burn an Event Ticket to &ldquo;use&rdquo;
+              it), or reducing supply of an over-minted token type.
             </p>
           </div>
 
@@ -1866,6 +1907,11 @@ function Burn1155Panel({ address, balances, onSuccess, onNotify }) {
               className="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 text-sm text-white outline-none transition focus:border-rose-500/50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <option value="">Select a token…</option>
+              {balances.find(({ token }) => token.id === 3n)?.balance > 0n && (
+                <option value="" disabled>
+                  Dragon Sword — dismantle it instead of burning
+                </option>
+              )}
               {ownedTokens.map(({ token, balance }) => (
                 <option key={token.id} value={token.id.toString()}>
                   {token.name} (ID #{token.id.toString()}) — balance: {balance.toString()}
@@ -2206,7 +2252,7 @@ export default function Inventory() {
       functionName: 'balanceOf',
       args: [address, t.id],
     })),
-    query: { enabled: !!address },
+    query: { enabled: !!address && !!TOKEN_VERSE_1155_ADDRESS },
   });
 
   // Resolve the user's unique Dragon Sword token ID
@@ -2280,6 +2326,9 @@ export default function Inventory() {
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-amber-400">
             Your Holdings
           </p>
+          <p className="mb-6 text-sm text-gray-500">
+            All your tokens across ERC-20, ERC-721, and ERC-1155 — expand any panel below to transfer, approve, or burn.
+          </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <StatPill label="TVG Balance"   value={erc20Loading ? '—' : formatTVG(tvgBalance)} />
             <StatPill label="NFTs Owned"    value={erc721Loading ? '—' : (nftBalance != null ? nftBalance.toString() : '0')} />
@@ -2334,7 +2383,13 @@ export default function Inventory() {
               <span className="text-xl">🧙</span>
               <div>
                 <p className="text-sm font-semibold text-blue-300">No character NFTs yet</p>
-                <p className="text-xs text-gray-400">Head to the ERC-721 page to claim a character.</p>
+                <p className="text-xs text-gray-400">
+                  Head to the{' '}
+                  <Link to="/erc721" className="font-semibold text-blue-400 underline-offset-2 hover:underline">
+                    ERC-721 page
+                  </Link>{' '}
+                  to claim a character.
+                </p>
               </div>
             </div>
           )}
@@ -2386,7 +2441,13 @@ export default function Inventory() {
               <span className="text-xl">🎒</span>
               <div>
                 <p className="text-sm font-semibold text-amber-300">No ERC-1155 tokens yet</p>
-                <p className="text-xs text-gray-400">Head to the ERC-1155 page and claim your free Starter Pack.</p>
+                <p className="text-xs text-gray-400">
+                  Head to the{' '}
+                  <Link to="/erc1155" className="font-semibold text-amber-400 underline-offset-2 hover:underline">
+                    ERC-1155 page
+                  </Link>{' '}
+                  and claim your free Starter Pack.
+                </p>
               </div>
             </div>
           )}
