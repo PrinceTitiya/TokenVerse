@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useReadContracts, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useReadContracts, useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TOKENS, RARITY_CONFIG, TOKEN_VERSE_1155_ADDRESS, TOKEN_VERSE_ABI } from '../constants/contracts';
 import InventoryCTA, { ICONS } from '../components/InventoryCTA';
@@ -30,7 +30,7 @@ function SupplyValue({ status, value }) {
 }
 
 /* ─── token card ───────────────────────────────────────────── */
-function TokenCard({ token, supplyResult }) {
+function TokenCard({ token, supplyResult, isNft }) {
   const rarity = RARITY_CONFIG[token.rarity];
   const imageUrl = `${IPFS_GATEWAY}${token.imageCid}`;
 
@@ -52,18 +52,25 @@ function TokenCard({ token, supplyResult }) {
           {token.rarity}
         </span>
         <span className="absolute left-3 top-3 rounded-full bg-black/40 px-2 py-0.5 font-mono text-xs text-gray-400 backdrop-blur-sm">
-          #{token.id.toString()}
+          {isNft ? 'ID 1000+' : `#${token.id.toString()}`}
         </span>
+        {isNft && (
+          <span className="absolute left-3 bottom-3 rounded-full border border-amber-500/40 bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-300">
+            Unique
+          </span>
+        )}
       </div>
 
       {/* Info */}
       <div className="flex flex-1 flex-col gap-2 p-4">
         <h3 className="text-base font-bold text-white">{token.name}</h3>
-        <span className="font-mono text-xs text-gray-500">Token ID #{token.id.toString()}</span>
+        <span className="font-mono text-xs text-gray-500">
+          {isNft ? 'NFT-like · Unique per holder' : `Token ID #${token.id.toString()}`}
+        </span>
         <p className="text-xs leading-relaxed text-gray-400">{token.description}</p>
 
         <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-3">
-          <span className="text-xs text-gray-500">Total Supply</span>
+          <span className="text-xs text-gray-500">{isNft ? 'Total Minted' : 'Total Supply'}</span>
           <span className={`text-sm font-semibold ${supplyResult?.status === 'success' ? 'text-white' : 'text-gray-500'}`}>
             <SupplyValue
               status={supplyResult == null ? 'pending' : supplyResult.status}
@@ -192,11 +199,11 @@ function HowItWorksBox() {
               </p>
               <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300 space-y-1">
                 <div>
-                  <span className="text-gray-600">{'// check: balanceOf(msg.sender, DRAGON_SWORD) >= 1'}</span>
+                  <span className="text-gray-600">{'// check: isSword(swordId) && balanceOf(msg.sender, swordId) >= 1'}</span>
                 </div>
                 <div>
                   <span className="text-rose-400">_burn</span>
-                  <span className="text-gray-500">(msg.sender, DRAGON_SWORD, 1)</span>
+                  <span className="text-gray-500">(msg.sender, swordId, 1)</span>
                 </div>
                 <div>
                   <span className="text-amber-400">_mint</span>
@@ -276,8 +283,8 @@ function StarterPackSection() {
       {
         address: TOKEN_VERSE_1155_ADDRESS,
         abi: TOKEN_VERSE_ABI,
-        functionName: 'balanceOf',
-        args: [address ?? '0x0000000000000000000000000000000000000000', 3n],
+        functionName: 'swordIdOf',
+        args: [address ?? '0x0000000000000000000000000000000000000000'],
       },
     ],
     query: { enabled: !!TOKEN_VERSE_1155_ADDRESS },
@@ -286,7 +293,15 @@ function StarterPackSection() {
   const alreadyClaimed = data?.[0]?.status === 'success' ? data[0].result : false;
   const goldBalance    = data?.[1]?.status === 'success' ? data[1].result : null;
   const gemsBalance    = data?.[2]?.status === 'success' ? data[2].result : null;
-  const swordBalance   = data?.[3]?.status === 'success' ? data[3].result : null;
+  const userSwordId    = data?.[3]?.status === 'success' ? data[3].result : null;
+
+  const { data: swordBalance } = useReadContract({
+    address: TOKEN_VERSE_1155_ADDRESS,
+    abi: TOKEN_VERSE_ABI,
+    functionName: 'balanceOf',
+    args: [address ?? '0x0000000000000000000000000000000000000000', userSwordId ?? 0n],
+    query: { enabled: !!TOKEN_VERSE_1155_ADDRESS && !!address && userSwordId != null && userSwordId > 0n },
+  });
 
   const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
@@ -364,7 +379,7 @@ function StarterPackSection() {
   const tokenRows = [
     { label: 'Gold',         balance: goldBalance,  color: 'text-amber-400',  bg: 'bg-amber-500/10',  id: '1' },
     { label: 'Gems',         balance: gemsBalance,  color: 'text-blue-400',   bg: 'bg-blue-500/10',   id: '2' },
-    { label: 'Dragon Sword', balance: swordBalance, color: 'text-purple-400', bg: 'bg-purple-500/10', id: '3' },
+    { label: 'Dragon Sword', balance: swordBalance ?? null, color: 'text-purple-400', bg: 'bg-purple-500/10', id: userSwordId ? userSwordId.toString() : '…' },
   ];
 
   return (
@@ -447,7 +462,7 @@ function StarterPackSection() {
               <div className="font-mono text-xs text-gray-300">
                 <span className="text-amber-400">claimStarterPack</span>
                 <span className="text-gray-500">()</span>
-                <span className="ml-2 text-gray-600">→ _mintBatch([1,2,3], [10,5,1])</span>
+                <span className="ml-2 text-gray-600">→ _mintBatch([1,2], [10,5]) + _mint(swordId, 1)</span>
               </div>
               <div className="mt-1 font-mono text-xs text-gray-600">
                 contract:{' '}
@@ -491,6 +506,14 @@ export default function ERC1155() {
       functionName: 'totalSupply',
       args: [t.id],
     })),
+  });
+
+  // Dragon Sword uses unique IDs starting at 1000 — total minted = nextSwordId - 1000
+  const { data: nextSwordIdRaw } = useReadContract({
+    address: TOKEN_VERSE_1155_ADDRESS,
+    abi: TOKEN_VERSE_ABI,
+    functionName: 'nextSwordId',
+    query: { enabled: !!TOKEN_VERSE_1155_ADDRESS },
   });
 
   const sortedTokens = [...TOKENS].sort(
@@ -597,20 +620,29 @@ export default function ERC1155() {
             <p className="mx-auto max-w-2xl text-sm text-gray-400">
               Each token lives at a different integer ID inside the same contract address.
               Gold (ID 1) and Gems (ID 2) are fungible — stackable resources. Dragon Sword
-              (ID 3) and Event Ticket (ID 4) are semi-fungible — limited quantities with
-              distinct utility. Dragon Glass (ID 5) is the crafting output, minted only by
-              dismantling a Dragon Sword on-chain.
+              (IDs 1000+) is NFT-like — each holder gets a unique on-chain ID when they
+              claim their starter pack, just like ERC-721 but inside a single ERC-1155 contract.
+              Event Ticket (ID 4) is limited edition. Dragon Glass (ID 5) is the crafting
+              output, minted only by dismantling a Dragon Sword on-chain.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {sortedTokens.map((token) => {
               const originalIndex = TOKENS.findIndex((t) => t.id === token.id);
+              const isDragonSword = token.id === 3n;
+
+              let supplyResult = data?.[originalIndex];
+              if (isDragonSword && nextSwordIdRaw != null) {
+                supplyResult = { status: 'success', result: nextSwordIdRaw - 1000n };
+              }
+
               return (
                 <TokenCard
                   key={token.id}
                   token={token}
-                  supplyResult={data?.[originalIndex]}
+                  supplyResult={supplyResult}
+                  isNft={isDragonSword}
                 />
               );
             })}
