@@ -1,10 +1,8 @@
 // Update these after every fresh `make deploy-local` or `make deploy-sepolia`.
 export const TOKEN_VERSE_1155_ADDRESS =
-  "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318";
-export const TOKEN_VERSE_ERC20_ADDRESS =
   "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-export const TOKEN_VERSE_ERC721_ADDRESS =
-  "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+export const TOKEN_VERSE_ERC20_ADDRESS = "";
+export const TOKEN_VERSE_ERC721_ADDRESS = "";
 
 export const TOKEN_VERSE_ERC721_ABI = [
   {
@@ -308,7 +306,7 @@ export const TOKEN_VERSE_ABI = [
   {
     type: "function",
     name: "dismantleDragonSword",
-    inputs: [],
+    inputs: [{ name: "swordId", type: "uint256" }],
     outputs: [],
     stateMutability: "nonpayable",
   },
@@ -402,6 +400,27 @@ export const TOKEN_VERSE_ABI = [
     stateMutability: "view",
   },
   {
+    type: "function",
+    name: "nextSwordId",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "swordIdOf",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "mintSwordFor",
+    inputs: [{ name: "to", type: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
     type: "event",
     name: "StarterPackClaimed",
     inputs: [{ name: "claimer", type: "address", indexed: true }],
@@ -414,6 +433,16 @@ export const TOKEN_VERSE_ABI = [
   {
     type: "error",
     name: "InsufficientDragonSwords",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "NotASword",
+    inputs: [],
+  },
+  {
+    type: "error",
+    name: "AlreadyHasSword",
     inputs: [],
   },
   {
@@ -441,7 +470,8 @@ export const TOKENS = [
   {
     id: 3n,
     name: "Dragon Sword",
-    description: "A legendary weapon. Dismantle it into 100 Dragon Glass.",
+    description:
+      "A legendary weapon forged for a single warrior. Each sword has a unique on-chain ID — dismantle it into 100 Dragon Glass.",
     rarity: "Legendary",
     imageCid: "bafkreieve4slxmdhezg4dcdsdx64sic2b2sfqr5au65r7tvpl2xbudn7ea",
   },
