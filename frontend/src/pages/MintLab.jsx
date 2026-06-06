@@ -748,7 +748,7 @@ function ERC721EducationBox() {
 function ERC721MintForm({ isConnected, address }) {
   const [typeId, setTypeId] = useState('0');
 
-  const { data: alreadyMinted, refetch } = useReadContract({
+  const { data: alreadyMinted, isError: contractError, refetch } = useReadContract({
     address: TOKEN_VERSE_ERC721_ADDRESS,
     abi: TOKEN_VERSE_ERC721_ABI,
     functionName: 'hasMintedType',
@@ -777,7 +777,7 @@ function ERC721MintForm({ isConnected, address }) {
   }
 
   const selectedType = ERC721_TYPES.find((t) => t.id.toString() === typeId);
-  const canSubmit = isConnected && !alreadyMinted;
+  const canSubmit = !!TOKEN_VERSE_ERC721_ADDRESS && isConnected && !alreadyMinted && !contractError;
 
   return (
     <div className="rounded-2xl border border-white/5 bg-gray-900 p-6">
@@ -855,7 +855,17 @@ function ERC721MintForm({ isConnected, address }) {
           confirmLabel="NFT minted!"
         />
 
-        {!isConnected && (
+        {!TOKEN_VERSE_ERC721_ADDRESS ? (
+          <p className="text-center text-xs text-gray-600">
+            Contract not deployed — run{' '}
+            <span className="font-mono text-gray-500">make deploy-erc721-local</span>
+          </p>
+        ) : contractError ? (
+          <p className="text-center text-xs text-rose-500/70">
+            Contract unreachable — check address or run{' '}
+            <span className="font-mono">make anvil</span>
+          </p>
+        ) : !isConnected && (
           <p className="text-center text-xs text-gray-600">Connect wallet to enable minting</p>
         )}
       </div>
