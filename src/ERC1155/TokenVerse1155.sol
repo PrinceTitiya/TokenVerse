@@ -77,7 +77,7 @@ contract TokenVerse1155 is ERC1155, ERC1155Supply, Ownable {
         swordIdOf[msg.sender] = swordId;
         _mint(msg.sender, swordId, 1, "");
 
-        emit StarterPackClaimed(msg.sender);
+        emit TokenVerse1155__StarterPackClaimed(msg.sender);
     }
 
     // OWNER SWORD GIFT — mint a unique sword for a wallet that hasn't claimed or currently holds one
@@ -116,7 +116,7 @@ contract TokenVerse1155 is ERC1155, ERC1155Supply, Ownable {
         }
         _burn(msg.sender, swordId, 1);
         _mint(msg.sender, DRAGON_GLASS, 100, "");
-        emit SwordDismantled(msg.sender, 100);
+        emit TokenVerse1155__SwordDismantled(msg.sender, 100);
     }
 
     // Returns true if `id` is in the Dragon Sword ID range
