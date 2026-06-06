@@ -263,7 +263,7 @@ function StarterPackSection() {
   const { address, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
 
-  const { data, isLoading, refetch } = useReadContracts({
+  const { data, isLoading, isError: contractError, refetch } = useReadContracts({
     contracts: [
       {
         address: TOKEN_VERSE_1155_ADDRESS,
@@ -322,6 +322,24 @@ function StarterPackSection() {
   }
 
   function ClaimButton() {
+    if (!TOKEN_VERSE_1155_ADDRESS) {
+      return (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-gray-700/50 bg-gray-800/30 py-3 text-sm font-semibold text-gray-500 cursor-not-allowed select-none">
+          Contract not deployed
+        </div>
+      );
+    }
+    if (contractError) {
+      return (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/5 py-3 text-sm font-semibold text-rose-400">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2L1 14h14L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8 7v3M8 11.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          </svg>
+          Contract unreachable
+        </div>
+      );
+    }
     if (!isConnected) {
       return (
         <button
@@ -399,6 +417,26 @@ function StarterPackSection() {
           calls <span className="font-mono text-gray-300">_mintBatch()</span> — one transaction
           that mints three different token IDs atomically.
         </p>
+
+        {(!TOKEN_VERSE_1155_ADDRESS || contractError) && (
+          <div className={`mb-4 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-xs ${
+            contractError
+              ? 'border-rose-500/20 bg-rose-500/5 text-rose-400'
+              : 'border-yellow-500/20 bg-yellow-500/5 text-yellow-400'
+          }`}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0">
+              <path d="M8 2L1 14h14L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8 7v3M8 11.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+            {contractError ? (
+              <>Contract unreachable — wrong address or Anvil not running. Check{' '}
+              <span className="font-mono">VITE_ERC1155_CONTRACT_ADDRESS</span>{' '}and run{' '}
+              <span className="font-mono">make anvil</span>.</>
+            ) : (
+              <>ERC-1155 contract is not deployed. Please deploy the contract first and check the address and anvil is running</>
+            )}
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2">
 

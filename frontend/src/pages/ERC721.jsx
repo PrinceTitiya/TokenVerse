@@ -60,7 +60,7 @@ function MintSection() {
   const { openConnectModal } = useConnectModal();
   const [mintingTypeId, setMintingTypeId] = useState(null);
 
-  const { data, isLoading, refetch } = useReadContracts({
+  const { data, isLoading, isError: contractError, refetch } = useReadContracts({
     contracts: [
       {
         address: TOKEN_VERSE_ERC721_ADDRESS,
@@ -119,6 +119,28 @@ function MintSection() {
           Public mint — any wallet can claim one of each character type. No global cap; the
           per-wallet-per-type mapping is the only guard.
         </p>
+
+        {(!TOKEN_VERSE_ERC721_ADDRESS || contractError) && (
+          <div className={`mb-6 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-xs ${
+            contractError
+              ? 'border-rose-500/20 bg-rose-500/5 text-rose-400'
+              : 'border-yellow-500/20 bg-yellow-500/5 text-yellow-400'
+          }`}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0">
+              <path d="M8 2L1 14h14L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8 7v3M8 11.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+            {contractError ? (
+              <>Contract unreachable — wrong address or Anvil not running. Check{' '}
+              <span className="font-mono">VITE_ERC721_CONTRACT_ADDRESS</span>{' '}and run{' '}
+              <span className="font-mono">make anvil</span>.</>
+            ) : (
+              <>ERC-721 contract is not deployed. Run{' '}
+              <span className="font-mono">make deploy-erc721-local</span>{' '}and update{' '}
+              <span className="font-mono">VITE_ERC721_CONTRACT_ADDRESS</span>.</>
+            )}
+          </div>
+        )}
 
         {/* live minted counter */}
         <div className="mb-6 rounded-xl border border-white/5 bg-gray-900/60 p-5">
@@ -192,7 +214,19 @@ function MintSection() {
 
                   {/* mint button */}
                   <div className="mt-auto pt-1">
-                    {!isConnected ? (
+                    {!TOKEN_VERSE_ERC721_ADDRESS ? (
+                      <div className="flex items-center justify-center gap-2 rounded-xl border border-gray-700/50 bg-gray-800/30 py-2.5 text-xs font-semibold text-gray-500 cursor-not-allowed select-none">
+                        Contract not deployed
+                      </div>
+                    ) : contractError ? (
+                      <div className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/5 py-2.5 text-xs font-semibold text-rose-400">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                          <path d="M8 2L1 14h14L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M8 7v3M8 11.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                        </svg>
+                        Contract unreachable
+                      </div>
+                    ) : !isConnected ? (
                       <button
                         onClick={openConnectModal}
                         className="w-full rounded-xl bg-white py-2.5 text-xs font-bold text-gray-900 transition-all hover:bg-gray-100"
