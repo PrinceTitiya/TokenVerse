@@ -1264,6 +1264,9 @@ function HoldingCard({ token, balance, dismantleState, onDismantle }) {
   const owned = balance != null && balance > 0n;
   const imageUrl = `${IPFS_GATEWAY}${token.imageCid}`;
   const isDragonSword = token.id === 3n;
+  const displayId = isDragonSword && token.uniqueSwordId
+    ? token.uniqueSwordId.toString()
+    : token.id.toString();
 
   return (
     <div className={`
@@ -1282,13 +1285,24 @@ function HoldingCard({ token, balance, dismantleState, onDismantle }) {
           {token.rarity}
         </span>
         <span className="absolute left-3 top-3 rounded-full bg-black/40 px-2 py-0.5 font-mono text-xs text-gray-400 backdrop-blur-sm">
-          #{token.id.toString()}
+          #{displayId}
         </span>
+        {isDragonSword && owned && (
+          <span className="absolute left-3 bottom-3 rounded-full border border-amber-500/40 bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-300">
+            Unique
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-1 p-4">
         <h3 className="text-base font-bold text-white">{token.name}</h3>
-        <span className="font-mono text-xs text-gray-500">Token ID #{token.id.toString()}</span>
+        <span className="font-mono text-xs text-gray-500">
+          {isDragonSword
+            ? token.uniqueSwordId
+              ? `NFT-like · Token ID #${displayId}`
+              : 'NFT-like · Not claimed'
+            : `Token ID #${displayId}`}
+        </span>
 
         <div className="mt-auto border-t border-white/5 pt-3">
           {owned ? (
@@ -1356,10 +1370,37 @@ function ERC1155BatchTransferPanel({ address, balances, onSuccess, onNotify }) {
   const isValidRecipient = /^0x[0-9a-fA-F]{40}$/.test(recipient);
   const isBusy = isPending || isConfirming;
 
+  const swordIncluded = selected.some(({ token }) => token.id === 3n);
+  const swordQueryAddr = isValidRecipient ? recipient : '0x0000000000000000000000000000000000000000';
+
+  const { data: swordPreflightData } = useReadContracts({
+    contracts: [
+      { address: TOKEN_VERSE_1155_ADDRESS, abi: TOKEN_VERSE_ABI, functionName: 'hasClaimedStarterPack', args: [swordQueryAddr] },
+      { address: TOKEN_VERSE_1155_ADDRESS, abi: TOKEN_VERSE_ABI, functionName: 'swordIdOf', args: [swordQueryAddr] },
+    ],
+    query: { enabled: isValidRecipient && swordIncluded },
+  });
+
+  const recipientHasClaimed = swordPreflightData?.[0]?.result ?? false;
+  const recipientSwordId    = swordPreflightData?.[1]?.result ?? 0n;
+  const recipientHasSwordAssigned = recipientSwordId >= 1000n;
+
+  const { data: recipientSwordBal } = useReadContract({
+    address: TOKEN_VERSE_1155_ADDRESS,
+    abi: TOKEN_VERSE_ABI,
+    functionName: 'balanceOf',
+    args: [swordQueryAddr, recipientSwordId],
+    query: { enabled: isValidRecipient && swordIncluded && recipientHasSwordAssigned },
+  });
+
+  const recipientHoldsSword  = recipientHasSwordAssigned && (recipientSwordBal ?? 0n) > 0n;
+  const swordTransferBlocked = swordIncluded && isValidRecipient && (recipientHasClaimed || recipientHoldsSword);
+
   function handleBatchTransfer() {
     setInputError('');
     if (!isValidRecipient) { setInputError('Enter a valid 0x address'); return; }
     if (selected.length === 0) { setInputError('Enter a valid amount for at least one token'); return; }
+    if (swordTransferBlocked) return;
     for (const { token, balance } of ownedTokens) {
       const amt = amounts[token.id.toString()];
       if (!amt) continue;
@@ -1374,7 +1415,7 @@ function ERC1155BatchTransferPanel({ address, balances, onSuccess, onNotify }) {
       args: [
         address,
         recipient,
-        selected.map(({ token }) => token.id),
+        selected.map(({ token }) => token.uniqueSwordId ?? token.id),
         selected.map(({ token }) => BigInt(amounts[token.id.toString()])),
         '0x',
       ],
@@ -1462,7 +1503,7 @@ function ERC1155BatchTransferPanel({ address, balances, onSuccess, onNotify }) {
                         {token.rarity}
                       </span>
                       <span className="truncate text-sm font-medium text-white">{token.name}</span>
-                      <span className="font-mono text-xs text-gray-600">#{token.id.toString()}</span>
+                      <span className="font-mono text-xs text-gray-600">#{(token.uniqueSwordId ?? token.id).toString()}</span>
                     </div>
                     {/* balance indicator */}
                     <span className="shrink-0 text-xs text-gray-500">
@@ -1498,6 +1539,22 @@ function ERC1155BatchTransferPanel({ address, balances, onSuccess, onNotify }) {
               })}
             </div>
           </div>
+
+          {/* Dragon Sword recipient pre-flight */}
+          {swordIncluded && isValidRecipient && (
+            <div className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-xs font-semibold ${
+              swordTransferBlocked
+                ? 'border-rose-500/20 bg-rose-500/5 text-rose-400'
+                : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
+            }`}>
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${swordTransferBlocked ? 'bg-rose-400' : 'bg-emerald-400'}`} />
+              {swordTransferBlocked
+                ? recipientHasClaimed
+                  ? 'Recipient already claimed starter pack — Dragon Sword cannot be sent to them'
+                  : 'Recipient already holds a Dragon Sword — cannot send another'
+                : 'Recipient eligible to receive Dragon Sword'}
+            </div>
+          )}
 
           {/* live transfer preview */}
           {selected.length > 0 && isValidRecipient && (
@@ -1546,7 +1603,7 @@ function ERC1155BatchTransferPanel({ address, balances, onSuccess, onNotify }) {
           ) : (
             <button
               onClick={handleBatchTransfer}
-              disabled={!isValidRecipient || selected.length === 0 || isBusy}
+              disabled={!isValidRecipient || selected.length === 0 || isBusy || swordTransferBlocked}
               className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-purple-500 py-3 text-sm font-semibold text-gray-950 transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {selected.length > 0
@@ -1563,7 +1620,7 @@ function ERC1155BatchTransferPanel({ address, balances, onSuccess, onNotify }) {
               <span className="text-gray-500">(from, to,</span>
             </div>
             <div className="font-mono text-xs text-gray-500 pl-4">
-              ids[{selected.map((s) => s.token.id.toString()).join(', ') || '…'}],
+              ids[{selected.map((s) => (s.token.uniqueSwordId ?? s.token.id).toString()).join(', ') || '…'}],
             </div>
             <div className="font-mono text-xs text-gray-500 pl-4">
               amounts[{selected.map((s) => amounts[s.token.id.toString()]).join(', ') || '…'}]
@@ -1723,7 +1780,8 @@ function Burn1155Panel({ address, balances, onSuccess, onNotify }) {
   const [amount, setAmount]         = useState('');
   const [inputError, setInputError] = useState('');
 
-  const ownedTokens = balances.filter(({ balance }) => balance != null && balance > 0n);
+  // Dragon Sword is excluded — use dismantleDragonSword() instead of generic burn
+  const ownedTokens = balances.filter(({ token, balance }) => balance != null && balance > 0n && token.id !== 3n);
   const selectedEntry = ownedTokens.find(({ token }) => token.id.toString() === selectedId);
 
   const { writeContract, data: txHash, isPending, reset } = useWriteContract();
@@ -2140,7 +2198,7 @@ export default function Inventory() {
     refetchNftUris();
   }, [refetchNftBal, refetchTokenIdx, refetchNftUris]);
 
-  // ERC-1155 reads
+  // ERC-1155 reads — Dragon Sword (ID 3) excluded; sword balance resolved via swordIdOf
   const { data, isLoading, refetch } = useReadContracts({
     contracts: TOKENS.map((t) => ({
       address: TOKEN_VERSE_1155_ADDRESS,
@@ -2151,31 +2209,62 @@ export default function Inventory() {
     query: { enabled: !!address },
   });
 
+  // Resolve the user's unique Dragon Sword token ID
+  const { data: swordIdRaw } = useReadContract({
+    address: TOKEN_VERSE_1155_ADDRESS,
+    abi: TOKEN_VERSE_ABI,
+    functionName: 'swordIdOf',
+    args: [address ?? '0x0000000000000000000000000000000000000000'],
+    query: { enabled: !!address && !!TOKEN_VERSE_1155_ADDRESS },
+  });
+  const userSwordId = swordIdRaw != null && swordIdRaw >= 1000n ? swordIdRaw : null;
+
+  const { data: swordBalRaw, refetch: refetchSwordBal } = useReadContract({
+    address: TOKEN_VERSE_1155_ADDRESS,
+    abi: TOKEN_VERSE_ABI,
+    functionName: 'balanceOf',
+    args: [address ?? '0x0000000000000000000000000000000000000000', userSwordId ?? 0n],
+    query: { enabled: !!address && !!TOKEN_VERSE_1155_ADDRESS && userSwordId != null },
+  });
+  const holdsSword = swordBalRaw != null && swordBalRaw > 0n;
+
   const { writeContract, data: txHash, isPending, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
 
   useEffect(() => {
     if (isConfirmed) {
       refetch();
+      refetchSwordBal();
       const timer = setTimeout(reset, 3000);
       return () => clearTimeout(timer);
     }
-  }, [isConfirmed, refetch, reset]);
+  }, [isConfirmed, refetch, refetchSwordBal, reset]);
 
   function handleDismantle() {
+    if (!userSwordId) return;
     writeContract({
       address: TOKEN_VERSE_1155_ADDRESS,
       abi: TOKEN_VERSE_ABI,
       functionName: 'dismantleDragonSword',
+      args: [userSwordId],
     });
   }
 
   if (!isConnected) return <ConnectPrompt />;
 
-  const balances = TOKENS.map((t, i) => ({
-    token: t,
-    balance: data?.[i]?.status === 'success' ? data[i].result : null,
-  }));
+  const balances = TOKENS.map((t, i) => {
+    if (t.id === 3n) {
+      // Dragon Sword: use unique sword ID and live balance instead of querying ID 3
+      return {
+        token: { ...t, uniqueSwordId: userSwordId },
+        balance: holdsSword ? 1n : 0n,
+      };
+    }
+    return {
+      token: t,
+      balance: data?.[i]?.status === 'success' ? data[i].result : null,
+    };
+  });
 
   const totalUnits  = balances.reduce((sum, { balance }) => sum + (balance ?? 0n), 0n);
   const uniqueTypes = balances.filter(({ balance }) => balance != null && balance > 0n).length;
