@@ -41,7 +41,7 @@ function TokenCard({ token, supplyResult, isNft }) {
       ${rarity.border} ${RARITY_GLOW[token.rarity]}
     `}>
       {/* Image */}
-      <div className={`relative aspect-square bg-gradient-to-b ${RARITY_IMAGE_BG[token.rarity]} p-5`}>
+      <div className={`relative aspect-square bg-gradient-to-b ${RARITY_IMAGE_BG[token.rarity]} p-3`}>
         <img
           src={imageUrl}
           alt={token.name}
@@ -67,7 +67,7 @@ function TokenCard({ token, supplyResult, isNft }) {
         <span className="font-mono text-xs text-gray-500">
           {isNft ? 'NFT-like · Unique per holder' : `Token ID #${token.id.toString()}`}
         </span>
-        <p className="text-xs leading-relaxed text-gray-400">{token.description}</p>
+        <p className="line-clamp-3 min-h-[3.75rem] text-xs leading-relaxed text-gray-400">{token.description}</p>
 
         <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-3">
           <span className="text-xs text-gray-500">{isNft ? 'Total Minted' : 'Total Supply'}</span>
@@ -109,7 +109,10 @@ function HowItWorksBox() {
             <p className="mb-4 text-xs leading-relaxed text-gray-400">
               Mints a specific token ID in any amount to any address. Each token type has
               a unique <span className="font-mono text-gray-300">id</span> — same function
-              call, different integers, different assets entirely.
+              call, different integers, different assets entirely. Exception: Dragon Sword
+              IDs (1000+) are auto-assigned per wallet via{' '}
+              <span className="font-mono text-gray-300">claimStarterPack()</span>, not
+              passed in directly.
             </p>
             <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300">
               <span className="text-amber-400">mint</span>
@@ -191,11 +194,11 @@ function HowItWorksBox() {
                 <span className="text-xs text-gray-500">On-Chain Crafting</span>
               </div>
               <p className="mb-4 text-xs leading-relaxed text-gray-400">
-                Burns 1 Dragon Sword (ID 3) and mints 100 Dragon Glass (ID 5) in a single
-                atomic transaction. This is the crafting pattern — no external marketplace,
-                no middleman, the swap happens entirely inside the contract with a balance
-                check guarded by{' '}
-                <span className="font-mono text-gray-300">InsufficientDragonSwords</span>.
+                Burns your unique Dragon Sword (ID 1000+) and mints 100 Dragon Glass (ID
+                5) in a single atomic transaction. Every holder's sword has a different
+                token ID — the contract calls{' '}
+                <span className="font-mono text-gray-300">isSword(swordId)</span> to verify
+                the ID is in the valid range (≥ 1000) No external marketplace, no middleman.
               </p>
               <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300 space-y-1">
                 <div>
@@ -619,11 +622,14 @@ export default function ERC1155() {
             <h2 className="mb-3 text-2xl font-bold text-white">5 Tokens, One Contract</h2>
             <p className="mx-auto max-w-2xl text-sm text-gray-400">
               Each token lives at a different integer ID inside the same contract address.
-              Gold (ID 1) and Gems (ID 2) are fungible — stackable resources. Dragon Sword
-              (IDs 1000+) is NFT-like — each holder gets a unique on-chain ID when they
-              claim their starter pack, just like ERC-721 but inside a single ERC-1155 contract.
-              Event Ticket (ID 4) is limited edition. Dragon Glass (ID 5) is the crafting
-              output, minted only by dismantling a Dragon Sword on-chain.
+              Gold (ID 1) and Gems (ID 2) are fungible — stackable resources minted in
+              every starter pack. Dragon Sword is NFT-like — instead of a fixed ID, each
+              wallet that claims a starter pack receives a unique sword ID starting at 1000,
+              tracked on-chain via{' '}
+              <span className="font-mono text-gray-300">swordIdOf[address]</span>. Event
+              Ticket (ID 4) is owner-controlled. Dragon Glass (ID 5) is the crafting
+              output — the only way to get it is by dismantling your Dragon Sword, which
+              burns 1 sword and mints 100 Dragon Glass in one atomic call.
             </p>
           </div>
 

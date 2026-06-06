@@ -504,42 +504,35 @@ export default function ERC721() {
                   <path d="M5 6h6M5 9h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
                 <div>
-                  <p className="mb-1 text-xs font-semibold text-blue-300">
-                    tokenURI() — On-Chain Metadata Pointer
-                  </p>
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-semibold text-blue-300">
+                      tokenURI() — On-Chain Metadata Pointer
+                    </p>
+                    <span className="rounded-full bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-400">OpenZeppelin · ERC721URIStorage</span>
+                  </div>
                   <p className="text-xs leading-relaxed text-gray-400">
-                    Each tokenId maps to a URI returned by{' '}
-                    <span className="font-mono text-gray-300">tokenURI(tokenId)</span>. This
-                    contract stores the full URI on-chain via{' '}
-                    <span className="font-mono text-gray-300">ERC721URIStorage</span>,
-                    pointing to an IPFS JSON file with name, description, image, and
-                    attributes. Marketplaces read this to display the NFT.
+                    Every NFT needs a way to describe itself — its name, image, and traits. <span className="font-mono text-gray-300">tokenURI(tokenId)</span> returns a link to a JSON file stored on IPFS that holds all that data. OpenZeppelin's <span className="font-mono text-gray-300">ERC721URIStorage</span> extension handles storing that link on-chain so marketplaces and wallets can read it without any backend.
                   </p>
                 </div>
               </div>
 
-              {/* diamond inheritance callout */}
+              {/* ERC721Enumerable callout */}
               <div className="flex items-start gap-3 rounded-xl border border-purple-500/15 bg-purple-500/5 px-5 py-4">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0 text-purple-400">
-                  <path d="M8 2L14 8L8 14L2 8L8 2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-                  <path d="M8 6v4M6 8h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                  <rect x="2" y="3" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                  <rect x="9" y="3" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                  <rect x="2" y="10" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+                  <rect x="9" y="10" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
                 </svg>
                 <div>
-                  <p className="mb-1 text-xs font-semibold text-purple-300">
-                    Diamond Inheritance — Four Overrides Required
-                  </p>
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-semibold text-purple-300">
+                      ERC721Enumerable — How Wallets Find Your NFTs
+                    </p>
+                    <span className="rounded-full bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-400">OpenZeppelin · ERC721Enumerable</span>
+                  </div>
                   <p className="text-xs leading-relaxed text-gray-400">
-                    Inheriting <span className="font-mono text-gray-300">ERC721</span>,{' '}
-                    <span className="font-mono text-gray-300">ERC721URIStorage</span>, and{' '}
-                    <span className="font-mono text-gray-300">ERC721Enumerable</span>{' '}
-                    together creates four ambiguous function conflicts:{' '}
-                    <span className="font-mono text-gray-300">_update</span>,{' '}
-                    <span className="font-mono text-gray-300">_increaseBalance</span>,{' '}
-                    <span className="font-mono text-gray-300">tokenURI</span>, and{' '}
-                    <span className="font-mono text-gray-300">supportsInterface</span>.
-                    Each must be manually overridden with{' '}
-                    <span className="font-mono text-gray-300">super</span> to chain both
-                    parent implementations in the correct order.
+                    ERC-721 can tell how many NFTs a wallet owns using <span className="font-mono text-gray-300">balanceOf()</span>. OpenZeppelin's <span className="font-mono text-gray-300">ERC721Enumerable</span> extension adds the ability to list and retrieve each NFT individually — so apps can loop through your entire collection. This is how wallets and NFT marketplaces can display all NFTs owned by a user.
                   </p>
                 </div>
               </div>
