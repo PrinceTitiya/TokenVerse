@@ -486,40 +486,44 @@ function BatchMint({ isOwner, address }) {
         </div>
       </div>
 
-      <div className="mb-4 flex flex-col gap-2">
+      <div className="mb-4 grid grid-cols-2 gap-2">
         {MINTABLE_TOKENS.map((t) => {
           const sel = selections[t.id.toString()];
           const rarity = RARITY_CONFIG[t.rarity];
           return (
             <label
               key={t.id}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
-                sel.checked ? 'border-purple-500/30 bg-purple-500/5' : 'border-white/5 bg-gray-950/40'
+              className={`flex cursor-pointer flex-col gap-2 rounded-xl px-3 py-3 transition-colors ${
+                sel.checked ? 'bg-purple-500/5' : 'bg-gray-950/40'
               } ${!isOwner ? 'cursor-not-allowed opacity-40' : ''}`}
             >
-              <input
-                type="checkbox"
-                checked={sel.checked}
-                disabled={!isOwner}
-                onChange={() => toggle(t.id.toString())}
-                className="h-4 w-4 accent-purple-500"
-              />
-              <div className="flex min-w-0 flex-1 items-center gap-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={sel.checked}
+                  disabled={!isOwner}
+                  onChange={() => toggle(t.id.toString())}
+                  className="h-4 w-4 accent-purple-500"
+                />
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${rarity.badge}`}>
                   {t.rarity}
                 </span>
-                <span className="truncate text-sm font-medium text-white">{t.name}</span>
-                <span className="font-mono text-xs text-gray-600">#{t.id.toString()}</span>
               </div>
-              <input
-                type="number"
-                min="1"
-                value={sel.amount}
-                disabled={!sel.checked || !isOwner}
-                onChange={(e) => setAmt(t.id.toString(), e.target.value)}
-                placeholder="amt"
-                className="w-20 rounded-lg border border-white/10 bg-gray-900 px-3 py-1.5 text-right text-sm text-white placeholder-gray-600 outline-none transition focus:border-purple-500/50 disabled:cursor-not-allowed disabled:opacity-30"
-              />
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-white">{t.name}</p>
+                  <p className="font-mono text-xs text-gray-600">#{t.id.toString()}</p>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  value={sel.amount}
+                  disabled={!sel.checked || !isOwner}
+                  onChange={(e) => setAmt(t.id.toString(), e.target.value)}
+                  placeholder="amt"
+                  className="w-16 rounded-lg border border-white/10 bg-gray-900 px-2 py-1.5 text-right text-sm text-white placeholder-gray-600 outline-none transition focus:border-purple-500/50 disabled:cursor-not-allowed disabled:opacity-30"
+                />
+              </div>
             </label>
           );
         })}
@@ -715,7 +719,7 @@ function ERC721EducationBox() {
             <span className="font-mono text-gray-300">mapping(address =&gt; mapping(uint256 =&gt; bool))</span>{' '}
             and reverts with{' '}
             <span className="font-mono text-gray-300">AlreadyMinted</span> on a second attempt.
-            A global cap of 50 enforces scarcity across all types.
+            No global supply cap — the per-wallet-per-type mapping is the only guard.
           </p>
           <div className="rounded-lg bg-gray-950/80 px-4 py-3 font-mono text-xs text-gray-300">
             <span className="text-blue-400">mint</span>
@@ -739,6 +743,7 @@ function ERC721EducationBox() {
             is assigned.
           </p>
         </div>
+
       </div>
     </div>
   );
@@ -781,6 +786,16 @@ function ERC721MintForm({ isConnected, address }) {
 
   return (
     <div className="rounded-2xl border border-white/5 bg-gray-900 p-6">
+      <div className="mb-4 flex items-start gap-3 rounded-xl border border-white/5 bg-gray-950/60 px-3 py-2.5">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" className="mt-0.5 shrink-0 text-gray-500">
+          <path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13ZM8 6v4M8 11.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+        <p className="text-xs leading-relaxed text-gray-500">
+          Same as minting on the <span className="font-medium text-gray-400">ERC-721 page</span> — shown here for completeness.
+          Head there for character cards and artwork.
+        </p>
+      </div>
+
       <div className="mb-5 flex items-center gap-3">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10">
           <span className="font-mono text-sm font-bold text-blue-400">NFT</span>
