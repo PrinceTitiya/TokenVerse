@@ -629,18 +629,27 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
     query: { enabled: isValidFrom && !!ownerAddress && !!TOKEN_VERSE_ERC20_ADDRESS },
   });
 
-  const { writeContract: writeTF, data: s2Hash, isPending: s2Pending, reset: s2Reset } = useWriteContract();
+  const { data: s2OwnerBalance, refetch: refetchS2Balance } = useReadContract({
+    address: TOKEN_VERSE_ERC20_ADDRESS,
+    abi: TOKEN_VERSE_ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [fromAddr],
+    query: { enabled: isValidFrom && !!TOKEN_VERSE_ERC20_ADDRESS },
+  });
+
+  const { writeContract: writeTF, data: s2Hash, isPending: s2Pending, error: s2WriteError, reset: s2Reset } = useWriteContract();
   const { isLoading: s2Confirming, isSuccess: s2Confirmed } = useWaitForTransactionReceipt({ hash: s2Hash });
 
   useEffect(() => {
     if (s2Confirmed) {
       onSuccess?.();
       refetchS2();
+      refetchS2Balance();
       onNotify?.('Tokens pulled!');
       const t = setTimeout(() => { s2Reset(); setS2Amount(''); }, 3000);
       return () => clearTimeout(t);
     }
-  }, [s2Confirmed, onSuccess, onNotify, refetchS2, s2Reset]);
+  }, [s2Confirmed, onSuccess, onNotify, refetchS2, refetchS2Balance, s2Reset]);
 
   function handleTransferFrom() {
     setS2Error('');
@@ -653,6 +662,10 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
     let parsed;
     try { parsed = parseUnits(s2Amount, 18); } catch { setS2Error('Invalid amount'); return; }
     if (s2Allowance != null && parsed > s2Allowance) { setS2Error('Amount exceeds your allowance'); return; }
+    if (s2OwnerBalance != null && parsed > s2OwnerBalance) {
+      setS2Error(`Owner only has ${formatTVG(s2OwnerBalance)} TVG — insufficient balance for this transfer`);
+      return;
+    }
     writeTF({
       address: TOKEN_VERSE_ERC20_ADDRESS,
       abi: TOKEN_VERSE_ERC20_ABI,
@@ -798,11 +811,22 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
 
           {/* live authorized limit */}
           {isValidFrom && (
-            <div className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3">
-              <span className="text-xs text-gray-500">Your authorized limit</span>
-              <span className={`font-mono text-sm font-bold ${s2Allowance != null && s2Allowance > 0n ? 'text-sky-300' : 'text-gray-500'}`}>
-                {s2Allowance != null ? `${formatTVG(s2Allowance)} TVG` : '…'}
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3">
+                <span className="text-xs text-gray-500">Your authorized limit</span>
+                <span className={`font-mono text-sm font-bold ${s2Allowance != null && s2Allowance > 0n ? 'text-sky-300' : 'text-gray-500'}`}>
+                  {s2Allowance != null ? `${formatTVG(s2Allowance)} TVG` : '…'}
+                </span>
+              </div>
+              <div className={`flex items-center justify-between rounded-xl border px-4 py-3 ${s2OwnerBalance != null && s2Allowance != null && s2OwnerBalance < s2Allowance ? 'border-rose-500/30 bg-rose-500/[0.06]' : 'border-white/5 bg-white/[0.02]'}`}>
+                <span className="text-xs text-gray-500">Owner's current balance</span>
+                <span className={`font-mono text-sm font-bold ${s2OwnerBalance != null && s2Allowance != null && s2OwnerBalance < s2Allowance ? 'text-rose-400' : 'text-gray-300'}`}>
+                  {s2OwnerBalance != null ? `${formatTVG(s2OwnerBalance)} TVG` : '…'}
+                  {s2OwnerBalance != null && s2Allowance != null && s2OwnerBalance < s2Allowance && (
+                    <span className="ml-2 text-xs font-normal text-rose-400">(below allowance)</span>
+                  )}
+                </span>
+              </div>
             </div>
           )}
 
@@ -843,7 +867,15 @@ function ApprovePanel({ ownerAddress, balance, onSuccess, onNotify }) {
             </div>
           </div>
 
-          {s2Error && <p className="text-xs text-red-400">{s2Error}</p>}
+          {s2Error && <p className="text-xs text-rose-400">{s2Error}</p>}
+          {s2WriteError && !s2Pending && !s2Confirmed && (
+            <p className="text-xs text-rose-400">
+              {s2WriteError.cause?.cause?.cause?.data?.errorName
+                ?? s2WriteError.cause?.cause?.data?.errorName
+                ?? s2WriteError.shortMessage
+                ?? 'Transaction failed'}
+            </p>
+          )}
 
           {s2Confirmed ? (
             <div className="flex items-center justify-center gap-2 rounded-xl border border-sky-500/20 bg-sky-500/10 py-3 text-sm font-semibold text-sky-300">
@@ -1993,6 +2025,266 @@ function Burn1155Panel({ address, balances, onSuccess, onNotify }) {
   );
 }
 
+/* ─── ERC-721 single-token approve panel ──────────────────── */
+function ERC721ApprovePanel({ address, nftMinted, onSuccess, onNotify }) {
+  const [isOpen, setIsOpen]         = useState(false);
+  const [selectedTypeId, setSelectedTypeId] = useState('');
+  const [spender, setSpender]       = useState('');
+  const [inputError, setInputError] = useState('');
+
+  const ownedTypes = ERC721_TYPES.filter((t) => nftMinted[t.id]);
+  const hasAnyOwned = ownedTypes.length > 0;
+
+  const selectedTypeIdNum = selectedTypeId !== '' ? parseInt(selectedTypeId) : null;
+  const isValidSpender = /^0x[0-9a-fA-F]{40}$/.test(spender);
+
+  // Resolve tokenId for the selected type by enumerating owned tokens
+  const { data: tokenIndexData } = useReadContracts({
+    contracts: [0n, 1n, 2n].map((i) => ({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'tokenOfOwnerByIndex',
+      args: [address ?? '0x0000000000000000000000000000000000000000', i],
+    })),
+    query: { enabled: !!address && !!TOKEN_VERSE_ERC721_ADDRESS && isOpen && hasAnyOwned },
+  });
+
+  const ownedTokenIds = [0, 1, 2]
+    .map((i) => tokenIndexData?.[i]?.status === 'success' ? tokenIndexData[i].result : null)
+    .filter((id) => id != null);
+
+  const { data: uriData } = useReadContracts({
+    contracts: ownedTokenIds.map((tokenId) => ({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'tokenURI',
+      args: [tokenId],
+    })),
+    query: { enabled: ownedTokenIds.length > 0 && isOpen },
+  });
+
+  const typeToTokenId = {};
+  ownedTokenIds.forEach((tokenId, i) => {
+    const uri = uriData?.[i]?.status === 'success' ? uriData[i].result : null;
+    if (uri) {
+      const typeId = parseInt(uri.split('/').pop());
+      if (!isNaN(typeId)) typeToTokenId[typeId] = tokenId;
+    }
+  });
+
+  const resolvedTokenId = selectedTypeIdNum !== null ? (typeToTokenId[selectedTypeIdNum] ?? null) : null;
+
+  // Read current approved address for this tokenId
+  const { data: currentApproved, refetch: refetchApproved } = useReadContract({
+    address: TOKEN_VERSE_ERC721_ADDRESS,
+    abi: TOKEN_VERSE_ERC721_ABI,
+    functionName: 'getApproved',
+    args: [resolvedTokenId ?? 0n],
+    query: { enabled: resolvedTokenId != null && !!TOKEN_VERSE_ERC721_ADDRESS },
+  });
+
+  const hasApproval = currentApproved && currentApproved !== '0x0000000000000000000000000000000000000000';
+
+  const { writeContract, data: txHash, isPending, reset } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  useEffect(() => {
+    if (isConfirmed) {
+      onSuccess?.();
+      refetchApproved();
+      onNotify?.('Approval updated!');
+      const t = setTimeout(() => { reset(); setSpender(''); }, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, onSuccess, onNotify, refetchApproved, reset]);
+
+  function handleApprove(spenderAddr) {
+    setInputError('');
+    if (resolvedTokenId == null) { setInputError('Token not found'); return; }
+    if (!/^0x[0-9a-fA-F]{40}$/.test(spenderAddr)) { setInputError('Enter a valid spender address'); return; }
+    writeContract({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'approve',
+      args: [spenderAddr, resolvedTokenId],
+    });
+  }
+
+  function handleRevoke() {
+    setInputError('');
+    if (resolvedTokenId == null) { setInputError('Token not found'); return; }
+    writeContract({
+      address: TOKEN_VERSE_ERC721_ADDRESS,
+      abi: TOKEN_VERSE_ERC721_ABI,
+      functionName: 'approve',
+      args: ['0x0000000000000000000000000000000000000000', resolvedTokenId],
+    });
+  }
+
+  const isBusy = isPending || isConfirming;
+  const selectedType = ERC721_TYPES.find((t) => t.id === selectedTypeIdNum);
+
+  if (!hasAnyOwned) return null;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-white/5 bg-gray-900">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-white/[0.02]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10">
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+              <rect x="2" y="5" width="8" height="6" rx="1" stroke="#60a5fa" strokeWidth="1.3" />
+              <path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="#60a5fa" strokeWidth="1.3" strokeLinecap="round" />
+              <circle cx="6" cy="8" r="1" fill="#60a5fa" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Approve Token</p>
+            <p className="text-xs text-gray-500">Delegate one specific NFT · approve(spender, tokenId)</p>
+          </div>
+        </div>
+        <svg
+          width="16" height="16" viewBox="0 0 12 12" fill="none"
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="space-y-4 border-t border-white/5 px-6 pb-6 pt-5">
+
+          <div className="rounded-xl border border-blue-500/10 bg-blue-500/[0.05] px-4 py-3">
+            <p className="text-xs leading-relaxed text-gray-400">
+              <span className="font-semibold text-blue-300">approve(spender, tokenId)</span> grants
+              one address the right to transfer a single specific token — unlike{' '}
+              <span className="font-mono text-gray-300">setApprovalForAll</span> which covers your
+              entire collection. Call with <span className="font-mono text-gray-300">address(0)</span>{' '}
+              to revoke. Only one approved address per token at a time.
+            </p>
+          </div>
+
+          {/* character selector */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Character to Approve
+            </label>
+            <select
+              value={selectedTypeId}
+              onChange={(e) => { setSelectedTypeId(e.target.value); setInputError(''); }}
+              disabled={isBusy}
+              className="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 text-sm text-white outline-none transition focus:border-blue-500/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <option value="">Select a character…</option>
+              {ownedTypes.map((t) => (
+                <option key={t.id} value={t.id.toString()}>
+                  {t.name} — Type #{t.id} ({t.class} · {t.element})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* resolved tokenId + current approved */}
+          {selectedType && resolvedTokenId != null && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-xl border border-white/5 bg-gray-950/60 px-4 py-2.5">
+                <span className="text-xs text-gray-500">Token ID on-chain</span>
+                <span className="font-mono text-sm font-semibold text-white">#{resolvedTokenId.toString()}</span>
+              </div>
+              <div className={`flex items-center justify-between rounded-xl border px-4 py-2.5 transition-colors ${
+                hasApproval ? 'border-blue-500/20 bg-blue-500/[0.04]' : 'border-white/5 bg-gray-950/60'
+              }`}>
+                <span className="text-xs text-gray-500">Currently approved</span>
+                {currentApproved === undefined ? (
+                  <span className="h-3 w-24 animate-pulse rounded bg-white/5" />
+                ) : hasApproval ? (
+                  <span className="font-mono text-xs font-semibold text-blue-400">
+                    {currentApproved.slice(0, 8)}…{currentApproved.slice(-6)}
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-gray-500">None</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* spender input */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Spender Address
+            </label>
+            <input
+              type="text"
+              placeholder="0x…"
+              value={spender}
+              onChange={(e) => { setSpender(e.target.value); setInputError(''); }}
+              disabled={isBusy}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-sm text-white placeholder-gray-600 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50"
+            />
+          </div>
+
+          {inputError && <p className="text-xs text-rose-400">{inputError}</p>}
+
+          {isConfirmed ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 py-3 text-sm font-semibold text-blue-300">
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Approval updated!
+            </div>
+          ) : isPending ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Confirm in wallet…
+            </div>
+          ) : isConfirming ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 py-3 text-sm font-semibold text-amber-400">
+              <span className="h-4 w-4 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              Updating approval…
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleApprove(spender)}
+                disabled={isBusy || !isValidSpender || resolvedTokenId == null}
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-blue-500 hover:to-blue-400 hover:shadow-lg hover:shadow-blue-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Approve
+              </button>
+              <button
+                onClick={handleRevoke}
+                disabled={isBusy || !hasApproval || resolvedTokenId == null}
+                className="rounded-xl border border-rose-500/30 bg-rose-500/10 py-3 text-sm font-semibold text-rose-400 transition-all duration-200 hover:bg-rose-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Revoke
+              </button>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-white/5 bg-gray-950/60 px-4 py-3">
+            <p className="mb-1 text-xs text-gray-600">Calling on-chain</p>
+            <div className="font-mono text-xs text-gray-300">
+              <span className="text-blue-400">approve</span>
+              <span className="text-gray-500">(</span>
+              <span className="text-amber-300">address</span>
+              <span className="text-gray-300"> spender, </span>
+              <span className="text-amber-300">uint256</span>
+              <span className="text-gray-300"> tokenId</span>
+              <span className="text-gray-500">)</span>
+            </div>
+            <p className="mt-1 text-xs text-gray-600">
+              Emits <span className="font-mono text-gray-500">Approval(owner, approved, tokenId)</span>
+            </p>
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── ERC-721 operator approval panel ─────────────────────── */
 function SetApprovalForAllPanel({ address, onSuccess, onNotify }) {
   const [isOpen, setIsOpen]     = useState(false);
@@ -2250,7 +2542,7 @@ export default function Inventory() {
       address: TOKEN_VERSE_1155_ADDRESS,
       abi: TOKEN_VERSE_ABI,
       functionName: 'balanceOf',
-      args: [address, t.id],
+      args: [address ?? '0x0000000000000000000000000000000000000000', t.id],
     })),
     query: { enabled: !!address && !!TOKEN_VERSE_1155_ADDRESS },
   });
@@ -2410,6 +2702,12 @@ export default function Inventory() {
             address={address}
             nftMinted={nftMinted}
             nftBalance={nftBalance}
+            onSuccess={refetchErc721}
+            onNotify={notify}
+          />
+          <ERC721ApprovePanel
+            address={address}
+            nftMinted={nftMinted}
             onSuccess={refetchErc721}
             onNotify={notify}
           />
