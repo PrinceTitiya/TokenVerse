@@ -471,8 +471,8 @@ function StarterPackSection() {
               <div>
                 <p className="mb-2 text-xs font-medium text-gray-500">What you'll receive</p>
                 <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400">10 Gold</span>
-                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-400">5 Gems</span>
+                  <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400">100 Gold</span>
+                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-400">10 Gems</span>
                   <span className="rounded-full bg-purple-500/10 px-3 py-1 text-xs font-bold text-purple-400">1 Dragon Sword</span>
                 </div>
               </div>
@@ -503,7 +503,7 @@ function StarterPackSection() {
               <div className="font-mono text-xs text-gray-300">
                 <span className="text-amber-400">claimStarterPack</span>
                 <span className="text-gray-500">()</span>
-                <span className="ml-2 text-gray-600">→ _mintBatch([1,2], [10,5]) + _mint(swordId, 1)</span>
+                <span className="ml-2 text-gray-600">→ _mintBatch([1,2], [100,10]) + _mint(swordId, 1)</span>
               </div>
               <div className="mt-1 font-mono text-xs text-gray-600">
                 contract:{' '}
@@ -525,7 +525,7 @@ function StarterPackSection() {
               iconClass: 'text-amber-400',
               btn: 'bg-gradient-to-r from-amber-500 to-orange-500',
             }}
-            hint="Your starter pack (10 Gold · 5 Gems · 1 Dragon Sword) is live on Sepolia. Head to Inventory to try ERC-1155 mechanics — including the on-chain crafting pattern unique to this standard."
+            hint="Your starter pack (100 Gold · 10 Gems · 1 Dragon Sword) is live on Sepolia. Head to Inventory to try ERC-1155 mechanics — including the on-chain crafting pattern unique to this standard."
             items={[
               { icon: ICONS.dismantle, action: 'dismantleDragonSword()', desc: 'burn 1 Dragon Sword and receive 100 Dragon Glass shards in one atomic transaction' },
               { icon: ICONS.batch, action: 'safeBatchTransferFrom()', desc: 'send multiple token types to another wallet in a single call' },
