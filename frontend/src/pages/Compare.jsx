@@ -475,7 +475,7 @@ export default function Compare() {
               Which Standard Should You Use?
             </h2>
             <p className="mx-auto max-w-xl text-sm text-gray-400 leading-relaxed">
-              Answer three questions and the right standard will be apparent. The logic is simple —
+              Answer three questions and the right standard will be apparent. The logic is simple,
               but most developers skip it and reach for the wrong tool.
             </p>
           </div>
@@ -592,22 +592,20 @@ export default function Compare() {
             <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
             <div className="p-8 text-center">
               <p className="mx-auto max-w-2xl text-sm text-gray-400 leading-relaxed">
-                TokenVerse deploys all three standards on Ethereum — not to demonstrate breadth, but to show that each
+                TokenVerse deploys all three standards on Ethereum, not to demonstrate breadth, but to show that each
                 standard is a deliberate engineering decision. ERC-20 for fungible currency
-                (<span className="font-mono text-gray-300">TVG</span>), ERC-1155 for a multi-asset game inventory
-                (gold, gems, weapons, tickets), and ERC-721 (Phase 3 — in progress) for unique-ownership identity proofs.
-                The right standard is never the most popular one — it is the one whose data model matches the asset.
+                (<span className="font-mono text-gray-300">TVG</span>),  ERC-721 for unique-ownership identity proofs and
+                ERC-1155 for a multi-asset game inventory (gold, gems, weapons, tickets, unique cards).
+                The right standard is never the most popular one but the one whose data model matches the asset.
               </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                {[
-                  { label: 'ERC-20 · TVG Token',       to: '/erc20',   color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5 hover:border-emerald-500/60 hover:bg-emerald-500/10' },
-                  { label: 'ERC-1155 · Game Inventory', to: '/erc1155', color: 'border-amber-500/30 text-amber-400 bg-amber-500/5 hover:border-amber-500/60 hover:bg-amber-500/10'           },
-                  { label: 'ERC-721 · Unique Assets',   to: '/erc721',  color: 'border-blue-500/30 text-blue-400 bg-blue-500/5 hover:border-blue-500/60 hover:bg-blue-500/10'               },
-                ].map(({ label, to, color }) => (
-                  <Link key={label} to={to} className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition-all duration-150 ${color}`}>
-                    {label} →
-                  </Link>
-                ))}
+              <div className="mt-8 flex items-center justify-center gap-3">
+                <div className="h-px w-16 bg-gradient-to-r from-transparent to-emerald-500/40" />
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/50" />
+                <div className="h-px w-8 bg-gradient-to-r from-emerald-500/40 to-amber-500/40" />
+                <div className="h-2 w-2 rounded-full bg-amber-500/60" />
+                <div className="h-px w-8 bg-gradient-to-r from-amber-500/40 to-blue-500/40" />
+                <div className="h-1.5 w-1.5 rounded-full bg-blue-500/50" />
+                <div className="h-px w-16 bg-gradient-to-r from-blue-500/40 to-transparent" />
               </div>
             </div>
           </div>
