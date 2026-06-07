@@ -8,7 +8,7 @@ const STANDARD_LINKS = [
 ];
 
 const APP_LINKS = [
-  { to: '/compare',   label: 'Compare'   },
+  { to: '/',          label: 'Compare'   },
   { to: '/mint-lab',  label: 'Mint Lab'  },
   { to: '/inventory', label: 'Inventory' },
 ];
@@ -99,7 +99,7 @@ export default function Navbar() {
 
         {/* Left — logo + token standard links */}
         <div className="flex items-center gap-10">
-          <NavLink to="/compare" className="flex select-none items-center gap-3">
+          <NavLink to="/" className="flex select-none items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-purple-500 shadow-lg shadow-amber-500/20">
               <span className="text-lg font-black text-gray-950">TV</span>
             </div>

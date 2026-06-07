@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import ERC1155 from './pages/ERC1155.jsx';
 import Inventory from './pages/Inventory.jsx';
 import MintLab from './pages/MintLab.jsx';
@@ -13,7 +13,7 @@ function App() {
       <Navbar />
       <main className="pt-20">
         <Routes>
-          <Route path="/" element={<Navigate to="/compare" replace />} />
+          <Route path="/" element={<Compare />} />
           <Route path="/erc1155" element={<ERC1155 />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/mint-lab" element={<MintLab />} />
