@@ -19,7 +19,7 @@ function WalletButton() {
       {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
         const connected = mounted && account && chain;
 
-        if (!mounted) return <div className="h-12 w-44 rounded-full bg-white/5" />;
+        if (!mounted) return <div className="h-10 w-40 animate-pulse rounded-full bg-white/5" />;
 
         if (!connected) {
           return (
@@ -41,42 +41,49 @@ function WalletButton() {
           return (
             <button
               onClick={openChainModal}
-              className="group flex items-center gap-3 rounded-full border border-red-500/30 bg-red-500/10 py-2.5 pl-7 pr-3 text-lg font-semibold text-red-400 transition-all duration-200 hover:bg-red-500/20"
+              className="group flex items-center gap-2.5 rounded-full border border-red-500/40 bg-red-500/10 py-2.5 pl-5 pr-3 text-sm font-semibold text-red-400 transition-all duration-200 hover:bg-red-500/20"
             >
-              Wrong Network
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/30">
-                <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
-                  <path d="M6 3v3.5M6 8.5v.5" stroke="#f87171" strokeWidth="1.5" strokeLinecap="round" />
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
+                <circle cx="7" cy="7" r="6" stroke="#f87171" strokeWidth="1.2" />
+                <path d="M7 4v3M7 9h.01" stroke="#f87171" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+              Switch to Sepolia
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 transition-transform duration-200 group-hover:scale-110">
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                  <path d="M2.5 6h7M6.5 3l3 3-3 3" stroke="#f87171" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
             </button>
           );
         }
 
+        // Deterministic gradient hue derived from wallet address — unique per wallet, no external dep
+        const hue = parseInt(account.address.slice(2, 8), 16) % 360;
+
         return (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={openChainModal}
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-base font-medium text-gray-300 transition-colors hover:bg-white/10"
-            >
-              {chain.hasIcon && chain.iconUrl && (
-                <img src={chain.iconUrl} alt={chain.name} className="h-5 w-5 rounded-full" />
-              )}
-              {chain.name}
-            </button>
-            <button
-              onClick={openAccountModal}
-              className="group flex items-center gap-3 rounded-full bg-white py-2.5 pl-6 pr-3 text-lg font-semibold text-gray-900 transition-all duration-200 hover:bg-gray-100"
-            >
-              {account.displayName}
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 transition-transform duration-200 group-hover:scale-110">
-                <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
-                  <circle cx="6" cy="4" r="2" fill="#111" />
-                  <path d="M2 10c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="#111" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </span>
-            </button>
-          </div>
+          <button
+            onClick={openAccountModal}
+            className="group flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 py-2 pl-2 pr-5 text-sm font-semibold text-white transition-all duration-200 hover:border-white/20 hover:bg-white/10"
+          >
+            {account.ensAvatar ? (
+              <img
+                src={account.ensAvatar}
+                alt=""
+                className="h-8 w-8 rounded-full object-cover ring-1 ring-white/20"
+              />
+            ) : (
+              <div
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold uppercase tracking-wide text-white ring-1 ring-black/20"
+                style={{
+                  background: `linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue + 80) % 360},65%,38%))`,
+                }}
+              >
+                {account.address.slice(2, 4)}
+              </div>
+            )}
+            <span className="max-w-[120px] truncate">{account.displayName}</span>
+            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+          </button>
         );
       }}
     </ConnectButton.Custom>
@@ -102,11 +109,10 @@ export default function Navbar() {
           </NavLink>
 
           <div className="flex items-center gap-8">
-            {STANDARD_LINKS.map(({ to, label, end }) => (
+            {STANDARD_LINKS.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
-                end={end}
                 className={({ isActive }) =>
                   `relative text-lg font-medium tracking-wide transition-colors duration-200 ${
                     isActive
