@@ -11,7 +11,7 @@ function App() {
   return (
     <>
       <Navbar />
-      <main className="pt-20">
+      <main className="pt-14">
         <Routes>
           <Route path="/" element={<Compare />} />
           <Route path="/erc1155" element={<ERC1155 />} />

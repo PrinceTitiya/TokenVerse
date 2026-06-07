@@ -169,30 +169,30 @@ function DecisionTreeStatic() {
 
 export default function Compare() {
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-gray-950 px-6 py-16">
+    <div className="min-h-[calc(100vh-3.5rem)] bg-gray-950 px-6 py-10">
       <div className="mx-auto max-w-7xl">
 
         {/* ── Hero ────────────────────────────────────────────────────── */}
-        <section className="mb-20">
+        <section className="mb-16">
 
           {/* Top label */}
-          <div className="mb-6 flex items-center justify-center gap-3">
-            <div className="h-px w-16 bg-gradient-to-r from-transparent to-amber-500/60" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-amber-500/60" />
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-400">
               Token Standards Explorer
             </p>
-            <div className="h-px w-16 bg-gradient-to-l from-transparent to-amber-500/60" />
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-amber-500/60" />
           </div>
 
           {/* Title */}
-          <div className="mb-6 text-center">
-            <h1 className="mb-4 text-5xl font-extrabold tracking-tight text-white leading-tight">
+          <div className="mb-5 text-center">
+            <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white leading-tight">
               One Blockchain.{' '}
               <span className="bg-gradient-to-r from-amber-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
                 Three Standards.
               </span>
             </h1>
-            <p className="mx-auto max-w-2xl text-base text-gray-400 leading-relaxed">
+            <p className="mx-auto max-w-xl text-sm text-gray-400 leading-relaxed">
               ERC-20, ERC-721, and ERC-1155 each solve a different problem. This explorer
               walks through the architectural and practical differences — so you understand
               not just what each standard does, but <em className="text-gray-300 not-italic font-medium">why it was invented</em>.
@@ -200,7 +200,7 @@ export default function Compare() {
           </div>
 
           {/* Three standard pills */}
-          <div className="mb-14 flex flex-wrap items-center justify-center gap-3">
+          <div className="mb-10 flex flex-wrap items-center justify-center gap-2.5">
             {[
               { label: 'ERC-20', desc: 'Fungible Currency',   color: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400' },
               { label: 'ERC-721', desc: 'Unique Ownership',   color: 'border-blue-500/40 bg-blue-500/10 text-blue-400'         },
@@ -215,9 +215,9 @@ export default function Compare() {
           </div>
 
           {/* Why different standards exist */}
-          <div className="mb-12 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+          <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
             <div className="h-px w-full bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
-            <div className="p-8 md:p-10">
+            <div className="p-6 md:p-8">
               <div className="grid gap-8 md:grid-cols-2 md:gap-12 lg:grid-cols-[1fr_2fr]">
 
                 {/* Left — the problem statement */}
@@ -225,7 +225,7 @@ export default function Compare() {
                   <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-purple-400">
                     The Core Problem
                   </p>
-                  <h2 className="mb-4 text-2xl font-bold text-white leading-snug">
+                  <h2 className="mb-3 text-xl font-bold text-white leading-snug">
                     Why doesn't one standard cover everything?
                   </h2>
                   <p className="text-sm text-gray-400 leading-relaxed">
@@ -279,18 +279,18 @@ export default function Compare() {
           </div>
 
           {/* Three standard cards */}
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
 
             {/* ERC-20 */}
             <div className="group overflow-hidden rounded-2xl border border-emerald-500/20 bg-white/[0.03] transition-all duration-200 hover:border-emerald-500/40 hover:bg-emerald-500/[0.04]">
               <div className="h-px w-full bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent" />
-              <div className="p-6">
-                <div className="mb-4 flex items-start justify-between">
+              <div className="p-5">
+                <div className="mb-3 flex items-start justify-between">
                   <div>
-                    <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">ERC-20</span>
-                    <h3 className="mt-1 text-xl font-bold text-white">Fungible Token</h3>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-400">ERC-20</span>
+                    <h3 className="mt-0.5 text-base font-bold text-white">Fungible Token</h3>
                   </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-emerald-400">
                       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
                       <path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -298,12 +298,12 @@ export default function Compare() {
                   </div>
                 </div>
 
-                <p className="mb-5 text-sm text-gray-400 leading-relaxed">
+                <p className="mb-4 text-xs text-gray-400 leading-relaxed">
                   All tokens are identical and interchangeable. A balance ledger, not a list of
                   owned items. The standard for currency, stablecoins, and governance.
                 </p>
 
-                <div className="mb-5 space-y-2">
+                <div className="mb-4 space-y-1.5">
                   {[
                     { k: 'Token model',   v: 'Balance per address'    },
                     { k: 'Uniqueness',    v: 'None — all identical'   },
@@ -317,9 +317,9 @@ export default function Compare() {
                   ))}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {['USDC', 'DAI', 'UNI', 'WETH'].map((t) => (
-                    <span key={t} className="rounded-full border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-0.5 font-mono text-xs text-emerald-300">
+                    <span key={t} className="rounded-full border border-emerald-500/20 bg-emerald-500/5 px-2 py-0.5 font-mono text-[10px] text-emerald-300">
                       {t}
                     </span>
                   ))}
@@ -327,7 +327,7 @@ export default function Compare() {
 
                 <Link
                   to="/erc20"
-                  className="mt-5 flex items-center justify-between rounded-xl border border-emerald-500/25 bg-emerald-500/8 px-4 py-2.5 text-xs font-semibold text-emerald-400 transition-all duration-150 hover:border-emerald-500/50 hover:bg-emerald-500/15"
+                  className="mt-4 flex items-center justify-between rounded-xl border border-emerald-500/25 bg-emerald-500/8 px-4 py-2 text-xs font-semibold text-emerald-400 transition-all duration-150 hover:border-emerald-500/50 hover:bg-emerald-500/15"
                 >
                   Explore ERC-20
                   <span className="text-emerald-500">→</span>
@@ -338,14 +338,14 @@ export default function Compare() {
             {/* ERC-721 */}
             <div className="group overflow-hidden rounded-2xl border border-blue-500/20 bg-white/[0.03] transition-all duration-200 hover:border-blue-500/40 hover:bg-blue-500/[0.04]">
               <div className="h-px w-full bg-gradient-to-r from-transparent via-blue-500/60 to-transparent" />
-              <div className="p-6">
-                <div className="mb-4 flex items-start justify-between">
+              <div className="p-5">
+                <div className="mb-3 flex items-start justify-between">
                   <div>
-                    <span className="text-xs font-semibold uppercase tracking-widest text-blue-400">ERC-721</span>
-                    <h3 className="mt-1 text-xl font-bold text-white">Non-Fungible Token</h3>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-400">ERC-721</span>
+                    <h3 className="mt-0.5 text-base font-bold text-white">Non-Fungible Token</h3>
                   </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-blue-400">
                       <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" />
                       <path d="M9 9h6M9 13h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                       <circle cx="16" cy="16" r="3" fill="currentColor" opacity=".25" />
@@ -354,12 +354,12 @@ export default function Compare() {
                   </div>
                 </div>
 
-                <p className="mb-5 text-sm text-gray-400 leading-relaxed">
+                <p className="mb-4 text-xs text-gray-400 leading-relaxed">
                   Every token has a unique ID and distinct owner. Ownership is tracked per token,
                   not per balance. The standard for digital art, collectibles, and identity.
                 </p>
 
-                <div className="mb-5 space-y-2">
+                <div className="mb-4 space-y-1.5">
                   {[
                     { k: 'Token model',   v: 'Owner per token ID'   },
                     { k: 'Uniqueness',    v: 'Every token is unique' },
@@ -373,9 +373,9 @@ export default function Compare() {
                   ))}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {['CryptoPunks', 'BAYC', 'ENS', 'Pudgy'].map((t) => (
-                    <span key={t} className="rounded-full border border-blue-500/20 bg-blue-500/5 px-2.5 py-0.5 font-mono text-xs text-blue-300">
+                    <span key={t} className="rounded-full border border-blue-500/20 bg-blue-500/5 px-2 py-0.5 font-mono text-[10px] text-blue-300">
                       {t}
                     </span>
                   ))}
@@ -383,7 +383,7 @@ export default function Compare() {
 
                 <Link
                   to="/erc721"
-                  className="mt-5 flex items-center justify-between rounded-xl border border-blue-500/25 bg-blue-500/8 px-4 py-2.5 text-xs font-semibold text-blue-400 transition-all duration-150 hover:border-blue-500/50 hover:bg-blue-500/15"
+                  className="mt-4 flex items-center justify-between rounded-xl border border-blue-500/25 bg-blue-500/8 px-4 py-2 text-xs font-semibold text-blue-400 transition-all duration-150 hover:border-blue-500/50 hover:bg-blue-500/15"
                 >
                   Explore ERC-721
                   <span className="text-blue-500">→</span>
@@ -394,14 +394,14 @@ export default function Compare() {
             {/* ERC-1155 */}
             <div className="group overflow-hidden rounded-2xl border border-amber-500/20 bg-white/[0.03] transition-all duration-200 hover:border-amber-500/40 hover:bg-amber-500/[0.04]">
               <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
-              <div className="p-6">
-                <div className="mb-4 flex items-start justify-between">
+              <div className="p-5">
+                <div className="mb-3 flex items-start justify-between">
                   <div>
-                    <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">ERC-1155</span>
-                    <h3 className="mt-1 text-xl font-bold text-white">Multi-Token Standard</h3>
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-amber-400">ERC-1155</span>
+                    <h3 className="mt-0.5 text-base font-bold text-white">Multi-Token Standard</h3>
                   </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-amber-400">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-amber-400">
                       <rect x="3" y="3" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.5" />
                       <rect x="13" y="3" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.5" />
                       <rect x="3" y="13" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -410,12 +410,12 @@ export default function Compare() {
                   </div>
                 </div>
 
-                <p className="mb-5 text-sm text-gray-400 leading-relaxed">
+                <p className="mb-4 text-xs text-gray-400 leading-relaxed">
                   One contract, many token types. IDs can represent fungible or non-fungible tokens.
                   Batch operations make it 90%+ cheaper for games and multi-asset protocols.
                 </p>
 
-                <div className="mb-5 space-y-2">
+                <div className="mb-4 space-y-1.5">
                   {[
                     { k: 'Token model',   v: 'Balance per (address, id)'   },
                     { k: 'Uniqueness',    v: 'Per-ID — fungible or not'     },
@@ -429,9 +429,9 @@ export default function Compare() {
                   ))}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {['Enjin', 'OpenSea', 'Gods Unchained'].map((t) => (
-                    <span key={t} className="rounded-full border border-amber-500/20 bg-amber-500/5 px-2.5 py-0.5 font-mono text-xs text-amber-300">
+                    <span key={t} className="rounded-full border border-amber-500/20 bg-amber-500/5 px-2 py-0.5 font-mono text-[10px] text-amber-300">
                       {t}
                     </span>
                   ))}
@@ -439,7 +439,7 @@ export default function Compare() {
 
                 <Link
                   to="/erc1155"
-                  className="mt-5 flex items-center justify-between rounded-xl border border-amber-500/25 bg-amber-500/8 px-4 py-2.5 text-xs font-semibold text-amber-400 transition-all duration-150 hover:border-amber-500/50 hover:bg-amber-500/15"
+                  className="mt-4 flex items-center justify-between rounded-xl border border-amber-500/25 bg-amber-500/8 px-4 py-2 text-xs font-semibold text-amber-400 transition-all duration-150 hover:border-amber-500/50 hover:bg-amber-500/15"
                 >
                   Explore ERC-1155
                   <span className="text-amber-500">→</span>
@@ -459,19 +459,19 @@ export default function Compare() {
         <GasComparisonChart />
 
         {/* ── Section 5: Decision Tree ─────────────────────────────────── */}
-        <section className="mb-20">
+        <section className="mb-16">
 
           {/* Section label */}
-          <div className="mb-6 flex items-center justify-center gap-3">
-            <div className="h-px w-16 bg-gradient-to-r from-transparent to-purple-500/60" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-purple-400">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-purple-500/60" />
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-purple-400">
               Decision Tree
             </p>
-            <div className="h-px w-16 bg-gradient-to-l from-transparent to-purple-500/60" />
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-purple-500/60" />
           </div>
 
           <div className="mb-3 text-center">
-            <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white">
+            <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-white">
               Which Standard Should You Use?
             </h2>
             <p className="mx-auto max-w-xl text-sm text-gray-400 leading-relaxed">
@@ -520,16 +520,16 @@ export default function Compare() {
         <section className="mb-8">
 
           {/* Section label */}
-          <div className="mb-6 flex items-center justify-center gap-3">
-            <div className="h-px w-16 bg-gradient-to-r from-transparent to-white/20" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-white/20" />
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
               Summary
             </p>
-            <div className="h-px w-16 bg-gradient-to-l from-transparent to-white/20" />
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-white/20" />
           </div>
 
-          <div className="mb-10 text-center">
-            <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-white">
+          <div className="mb-8 text-center">
+            <h2 className="mb-2 text-2xl font-extrabold tracking-tight text-white">
               Three Standards.{' '}
               <span className="bg-gradient-to-r from-emerald-400 via-blue-400 to-amber-400 bg-clip-text text-transparent">
                 One Principle.

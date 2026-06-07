@@ -25,11 +25,11 @@ function WalletButton() {
           return (
             <button
               onClick={openConnectModal}
-              className="group flex items-center gap-3 rounded-full bg-white py-2.5 pl-7 pr-3 text-lg font-semibold text-gray-900 transition-all duration-200 hover:bg-gray-100 hover:shadow-lg hover:shadow-white/10"
+              className="group flex items-center gap-2.5 rounded-full bg-white py-2 pl-5 pr-2.5 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-gray-100 hover:shadow-lg hover:shadow-white/10"
             >
               Connect Wallet
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 transition-transform duration-200 group-hover:scale-110">
-                <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 transition-transform duration-200 group-hover:scale-110">
+                <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6h7M6.5 3l3 3-3 3" stroke="#111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
@@ -41,15 +41,15 @@ function WalletButton() {
           return (
             <button
               onClick={openChainModal}
-              className="group flex items-center gap-2.5 rounded-full border border-red-500/40 bg-red-500/10 py-2.5 pl-5 pr-3 text-sm font-semibold text-red-400 transition-all duration-200 hover:bg-red-500/20"
+              className="group flex items-center gap-2 rounded-full border border-red-500/40 bg-red-500/10 py-2 pl-4 pr-2.5 text-xs font-semibold text-red-400 transition-all duration-200 hover:bg-red-500/20"
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" className="shrink-0">
                 <circle cx="7" cy="7" r="6" stroke="#f87171" strokeWidth="1.2" />
                 <path d="M7 4v3M7 9h.01" stroke="#f87171" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
               Switch to Sepolia
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 transition-transform duration-200 group-hover:scale-110">
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 transition-transform duration-200 group-hover:scale-110">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6h7M6.5 3l3 3-3 3" stroke="#f87171" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
@@ -63,17 +63,17 @@ function WalletButton() {
         return (
           <button
             onClick={openAccountModal}
-            className="group flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 py-2 pl-2 pr-5 text-sm font-semibold text-white transition-all duration-200 hover:border-white/20 hover:bg-white/10"
+            className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1.5 pl-1.5 pr-4 text-xs font-semibold text-white transition-all duration-200 hover:border-white/20 hover:bg-white/10"
           >
             {account.ensAvatar ? (
               <img
                 src={account.ensAvatar}
                 alt=""
-                className="h-8 w-8 rounded-full object-cover ring-1 ring-white/20"
+                className="h-7 w-7 rounded-full object-cover ring-1 ring-white/20"
               />
             ) : (
               <div
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold uppercase tracking-wide text-white ring-1 ring-black/20"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold uppercase tracking-wide text-white ring-1 ring-black/20"
                 style={{
                   background: `linear-gradient(135deg, hsl(${hue},65%,55%), hsl(${(hue + 80) % 360},65%,38%))`,
                 }}
@@ -95,28 +95,28 @@ export default function Navbar() {
     <nav className="fixed left-0 right-0 top-0 z-50 border-b border-white/5 bg-gray-950/95 backdrop-blur-md">
       <div className="h-px w-full bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
 
-      <div className="flex h-20 w-full items-center justify-between px-10">
+      <div className="flex h-14 w-full items-center justify-between px-8">
 
         {/* Left — logo + token standard links */}
-        <div className="flex items-center gap-10">
-          <NavLink to="/" className="flex select-none items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-purple-500 shadow-lg shadow-amber-500/20">
-              <span className="text-lg font-black text-gray-950">TV</span>
+        <div className="flex items-center gap-8">
+          <NavLink to="/" className="flex select-none items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-purple-500 shadow-md shadow-amber-500/20">
+              <span className="text-xs font-black text-gray-950">TV</span>
             </div>
-            <span className="text-4xl font-bold tracking-tight text-white">
+            <span className="text-xl font-bold tracking-tight text-white">
               Token<span className="bg-gradient-to-r from-amber-400 to-purple-400 bg-clip-text text-transparent">Verse</span>
             </span>
           </NavLink>
 
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             {STANDARD_LINKS.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `relative text-lg font-medium tracking-wide transition-colors duration-200 ${
+                  `relative text-sm font-medium tracking-wide transition-colors duration-200 ${
                     isActive
-                      ? 'text-white after:absolute after:-bottom-1.5 after:left-0 after:h-px after:w-full after:bg-gradient-to-r after:from-amber-400 after:to-purple-400'
+                      ? 'text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:bg-gradient-to-r after:from-amber-400 after:to-purple-400'
                       : 'text-gray-400 hover:text-white'
                   }`
                 }
@@ -128,16 +128,16 @@ export default function Navbar() {
         </div>
 
         {/* Right — app links + wallet */}
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-8">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6">
             {APP_LINKS.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `relative text-lg font-medium tracking-wide transition-colors duration-200 ${
+                  `relative text-sm font-medium tracking-wide transition-colors duration-200 ${
                     isActive
-                      ? 'text-white after:absolute after:-bottom-1.5 after:left-0 after:h-px after:w-full after:bg-gradient-to-r after:from-amber-400 after:to-purple-400'
+                      ? 'text-white after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:bg-gradient-to-r after:from-amber-400 after:to-purple-400'
                       : 'text-gray-400 hover:text-white'
                   }`
                 }
