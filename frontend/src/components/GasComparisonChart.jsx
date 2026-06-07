@@ -164,7 +164,9 @@ export default function GasComparisonChart() {
       <div className="mb-8">
         <h2 className="mb-2 text-2xl font-bold text-white">Gas Comparison</h2>
         <p className="text-sm text-gray-400">
-          Real values measured with <span className="font-mono text-gray-300">forge test --gas-report</span> on the live TokenVerse contracts.
+          All figures are exact gas units captured in real time from Foundry's built-in gas profiler —
+          run via <span className="font-mono text-gray-300">forge test --gas-report</span> against the live TokenVerse
+          contracts. No estimates or benchmarks from external sources.
         </p>
       </div>
 
