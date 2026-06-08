@@ -1,0 +1,15 @@
+{
+  "name": "Gems",
+  "description": "Precious gemstones used for crafting and trading in TokenVerse.",
+  "image": "ipfs://bafkreifv37qqgq7s76ctbluwtio26ylu46cihr5afaao7yjc4rmofux7ry",
+  "attributes": [
+    {
+      "trait_type": "Category",
+      "value": "Premium Currency"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    }
+  ]
+}
