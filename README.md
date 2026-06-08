@@ -227,27 +227,33 @@ make frontend-install
 
 ### Environment Setup
 
-Copy the template and fill in values:
+There are two separate env files — one for Forge/Make, one for the Vite frontend:
 
 ```shell
+# Root — used by Forge and Make targets
 cp .env.example .env
+
+# Frontend — used by Vite (wallet connection + RPC)
+cp frontend/.env.local.example frontend/.env.local
 ```
 
-`.env` is auto-loaded by `make` via `-include .env`.
+**Root `.env`** — auto-loaded by `make` via `-include .env`:
 
-| Variable                        | Required by           | Notes                                                                               |
-| ------------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
-| `LOCAL_PRIVATE_KEY`             | All `*-local` targets | Anvil default: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80` |
-| `PRIVATE_KEY`                   | All Sepolia targets   | Real wallet private key                                                             |
-| `SEPOLIA_RPC_URL`               | Sepolia deploy        | e.g. Alchemy or Infura endpoint                                                     |
-| `ETHERSCAN_API_KEY`             | Sepolia verify        | For contract verification                                                           |
-| `VITE_ERC1155_CONTRACT_ADDRESS` | Frontend              | Deployed `TokenVerse1155` address                                                   |
-| `VITE_ERC20_CONTRACT_ADDRESS`   | Frontend              | Deployed `TokenVerseGold` address                                                   |
-| `VITE_ERC721_CONTRACT_ADDRESS`  | Frontend              | Deployed `TokenVerseNFT` address                                                    |
-| `VITE_WALLETCONNECT_PROJECT_ID` | Frontend              | From [cloud.walletconnect.com](https://cloud.walletconnect.com)                     |
-| `VITE_SEPOLIA_RPC_URL`          | Frontend              | Same endpoint as `SEPOLIA_RPC_URL`                                                  |
+| Variable            | Required by           | Notes                                                                               |
+| ------------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `LOCAL_PRIVATE_KEY` | All `*-local` targets | Anvil default: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80` |
+| `PRIVATE_KEY`       | All Sepolia targets   | Real wallet private key                                                             |
+| `SEPOLIA_RPC_URL`   | Sepolia deploy        | e.g. Alchemy or Infura endpoint                                                     |
+| `ETHERSCAN_API_KEY` | Sepolia verify        | For contract verification                                                           |
 
-> After every fresh local deploy the contract address changes. Update the corresponding `VITE_*_CONTRACT_ADDRESS` in `frontend/.env.local`.
+**`frontend/.env.local`** — picked up by Vite automatically:
+
+| Variable                        | Required by | Notes                                                           |
+| ------------------------------- | ----------- | --------------------------------------------------------------- |
+| `VITE_WALLETCONNECT_PROJECT_ID` | Frontend    | From [cloud.walletconnect.com](https://cloud.walletconnect.com) |
+| `VITE_SEPOLIA_RPC_URL`          | Frontend    | Same endpoint as `SEPOLIA_RPC_URL`                              |
+
+> Contract addresses are hardcoded constants in `frontend/src/constants/contracts.js`, not env vars. To point the frontend at a different deployment, edit that file directly.
 
 ---
 
@@ -396,7 +402,7 @@ make deploy-erc20-sepolia
 make deploy-erc721-sepolia
 ```
 
-Verification is automatic (`--verify --etherscan-api-key`). Update the `VITE_*` addresses in your hosting environment after deploy.
+Verification is automatic (`--verify --etherscan-api-key`). Update the `.env` in your hosting environment after deploy.
 
 ---
 
@@ -498,8 +504,16 @@ TokenVerse/
 │       ├── App.jsx                    # Route definitions
 │       └── main.jsx                   # Provider tree
 ├── metadata/
-│   ├── 1.json – 5.json               # ERC-1155 token metadata
-│   └── ERC721/0.json – 2.json        # ERC-721 character metadata
+│   ├── ERC1155/
+│   │   ├── 1.json                     # GOLD
+│   │   ├── 2.json                     # GEMS
+│   │   ├── 3.json                     # DRAGON_SWORD
+│   │   ├── 4.json                     # EVENT_TICKET
+│   │   └── 5.json                     # DRAGON_GLASS
+│   └── ERC721/
+│       ├── 0.json                     # Dragon Knight
+│       ├── 1.json                     # Ember Witch
+│       └── 2.json                     # Void Stalker
 ├── lib/
 │   ├── openzeppelin-contracts/
 │   └── forge-std/
